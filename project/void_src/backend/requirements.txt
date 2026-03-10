@@ -1,0 +1,23 @@
+# VOID Backend Dependencies
+fastapi==0.111.0
+uvicorn==0.29.0
+python-dotenv==1.0.1
+
+# Database
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.9
+
+# AI / ML
+torch>=2.0.0
+transformers>=4.40.0
+peft>=0.10.0
+bitsandbytes>=0.43.0
+accelerate>=0.29.0
+
+# Vision
+google-generativeai==0.5.4
+Pillow==10.3.0
+
+# Misc
+pydantic==2.7.1
+python-multipart==0.0.9

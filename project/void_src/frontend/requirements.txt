@@ -1,0 +1,11 @@
+# VOID Frontend Dependencies
+PyQt5==5.15.10
+pyautogui==0.9.54
+openai-whisper==20231117
+sounddevice==0.4.6
+scipy==1.13.0
+numpy==1.26.4
+Pillow==10.3.0
+pyttsx3==2.90
+requests==2.31.0
+easyocr==1.7.1
