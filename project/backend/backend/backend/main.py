@@ -7,11 +7,11 @@ import config  # noqa: F401
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 from database import engine, Base
 from routers import text_router, screen_router, meeting_router
 
-# ── Create DB tables ──────────────────────────────────────────────────────────
-Base.metadata.create_all(bind=engine)
+DB_INIT_ERROR = None
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -33,6 +33,18 @@ app.include_router(screen_router.router)
 app.include_router(meeting_router.router)
 
 
+@app.on_event("startup")
+def initialize_database():
+    global DB_INIT_ERROR
+
+    try:
+        Base.metadata.create_all(bind=engine)
+        DB_INIT_ERROR = None
+    except SQLAlchemyError as exc:
+        DB_INIT_ERROR = str(exc)
+        print(f"WARNING: Database initialization skipped: {exc}")
+
+
 # ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/health", tags=["Health"])
 def health():
@@ -41,6 +53,8 @@ def health():
         "model":   "Mistral-7B-v0.1 + Telugu LoRA",
         "vision":  "Gemini 1.5 Flash",
         "version": "1.0.0",
+        "database": "ready" if DB_INIT_ERROR is None else "unavailable",
+        "database_error": DB_INIT_ERROR,
     }
 
 

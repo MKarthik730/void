@@ -1,7 +1,7 @@
 # VOID Frontend Dependencies
 PyQt5==5.15.10
 pyautogui==0.9.54
-openai-whisper==20231117
+openai-whisper
 sounddevice==0.4.6
 scipy==1.13.0
 numpy==1.26.4

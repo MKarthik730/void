@@ -7,18 +7,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── HuggingFace cache (must be set before torch imports) ──────────────────────
+# ── HuggingFace cache ─────────────────────────────────────────────────────────
 HF_HOME      = os.getenv("HF_HOME", "D:\\huggingface")
 HF_HUB_CACHE = os.getenv("HUGGINGFACE_HUB_CACHE", "D:\\huggingface\\hub")
 os.environ["HF_HOME"]               = HF_HOME
 os.environ["HUGGINGFACE_HUB_CACHE"] = HF_HUB_CACHE
 
-# ── Model ─────────────────────────────────────────────────────────────────────
-BASE_MODEL   = os.getenv("BASE_MODEL",   "mistralai/Mistral-7B-v0.1")
-ADAPTER_PATH = os.getenv("ADAPTER_PATH", "../LLM")
+# ── Qwen GGUF Model (primary) ─────────────────────────────────────────────────
+QWEN_GGUF_PATH = os.getenv("QWEN_GGUF_PATH", "D:\\models\\qwen2.5-3b-instruct-q4_k_m.gguf")
 
-# ── Gemini ────────────────────────────────────────────────────────────────────
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+# ── Legacy Mistral (keep for reference) ──────────────────────────────────────
+BASE_MODEL     = os.getenv("BASE_MODEL",   "mistralai/Mistral-7B-v0.1")
+ADAPTER_PATH   = os.getenv("ADAPTER_PATH", "../LLM")
+MISTRAL_GGUF_PATH = os.getenv("MISTRAL_GGUF_PATH", "D:\\telugu_mistral_q4.gguf")
+
+# ── Gemini Vision API ─────────────────────────────────────────────────────────
+GEMINI_API_KEY = os.getenv("AIzaSyDqgghup3inYWNe7sDVl7u-cIUluKnwatg", "")
 
 # ── PostgreSQL ────────────────────────────────────────────────────────────────
 POSTGRES_USER     = os.getenv("POSTGRES_USER",     "void_user")
