@@ -1,0 +1,50 @@
+<svg width="500" height="500" viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg">
+<rect width="680" height="680" fill="#010d1a"/>
+<defs>
+  <radialGradient id="core" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#0af" stop-opacity="0.9"/>
+    <stop offset="40%" stop-color="#048" stop-opacity="0.6"/>
+    <stop offset="100%" stop-color="#001020" stop-opacity="1"/>
+  </radialGradient>
+  <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#0af" stop-opacity="0.25"/>
+    <stop offset="100%" stop-color="#0af" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<circle cx="340" cy="340" r="280" fill="url(#glow)"/>
+<circle cx="340" cy="340" r="200" fill="url(#core)"/>
+<circle cx="340" cy="340" r="198" fill="none" stroke="#0af" stroke-width="1.5" stroke-opacity="0.9"/>
+<circle cx="340" cy="340" r="168" fill="none" stroke="#0af" stroke-width="0.8" stroke-opacity="0.4"/>
+<circle cx="340" cy="340" r="80" fill="none" stroke="#0af" stroke-width="0.8" stroke-opacity="0.35"/>
+<circle cx="340" cy="340" r="52" fill="#001830" stroke="#0af" stroke-width="1" stroke-opacity="0.7"/>
+<circle cx="340" cy="340" r="30" fill="#0af" fill-opacity="0.18" stroke="#0af" stroke-width="0.5" stroke-opacity="0.6"/>
+<circle cx="340" cy="340" r="12" fill="#0af" fill-opacity="0.55"/>
+<line x1="340" y1="138" x2="340" y2="112" stroke="#0af" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="340" y1="542" x2="340" y2="568" stroke="#0af" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="138" y1="340" x2="112" y2="340" stroke="#0af" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="542" y1="340" x2="568" y2="340" stroke="#0af" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="482" y1="198" x2="498" y2="182" stroke="#0af" stroke-width="1.2" stroke-opacity="0.55" stroke-linecap="round"/>
+<line x1="198" y1="198" x2="182" y2="182" stroke="#0af" stroke-width="1.2" stroke-opacity="0.55" stroke-linecap="round"/>
+<line x1="198" y1="482" x2="182" y2="498" stroke="#0af" stroke-width="1.2" stroke-opacity="0.55" stroke-linecap="round"/>
+<line x1="482" y1="482" x2="498" y2="498" stroke="#0af" stroke-width="1.2" stroke-opacity="0.55" stroke-linecap="round"/>
+<circle cx="340" cy="142" r="3" fill="#0af" fill-opacity="0.9"/>
+<circle cx="340" cy="538" r="3" fill="#0af" fill-opacity="0.9"/>
+<circle cx="142" cy="340" r="3" fill="#0af" fill-opacity="0.9"/>
+<circle cx="538" cy="340" r="3" fill="#0af" fill-opacity="0.9"/>
+<line x1="340" y1="340" x2="340" y2="172" stroke="#0af" stroke-width="0.5" stroke-opacity="0.15"/>
+<line x1="340" y1="340" x2="340" y2="508" stroke="#0af" stroke-width="0.5" stroke-opacity="0.15"/>
+<line x1="172" y1="340" x2="508" y2="340" stroke="#0af" stroke-width="0.5" stroke-opacity="0.15"/>
+<path d="M 480 200 A 198 198 0 0 1 538 340" fill="none" stroke="#0af" stroke-width="3" stroke-opacity="0.8" stroke-linecap="round"/>
+<path d="M 200 480 A 198 198 0 0 1 142 340" fill="none" stroke="#0af" stroke-width="3" stroke-opacity="0.8" stroke-linecap="round"/>
+<path d="M 370 139 A 201 201 0 0 1 530 250" fill="none" stroke="#0af" stroke-width="0.8" stroke-opacity="0.3" stroke-dasharray="4 6"/>
+<path d="M 310 541 A 201 201 0 0 1 150 430" fill="none" stroke="#0af" stroke-width="0.8" stroke-opacity="0.3" stroke-dasharray="4 6"/>
+<text x="340" y="352" text-anchor="middle" font-family="Courier New, monospace" font-size="22" font-weight="700" fill="#0af" fill-opacity="0.95" letter-spacing="8">VOID</text>
+<path d="M 152 152 L 152 172 M 152 152 L 172 152" stroke="#0af" stroke-width="1.8" stroke-opacity="0.6" fill="none" stroke-linecap="round"/>
+<path d="M 528 152 L 528 172 M 528 152 L 508 152" stroke="#0af" stroke-width="1.8" stroke-opacity="0.6" fill="none" stroke-linecap="round"/>
+<path d="M 152 528 L 152 508 M 152 528 L 172 528" stroke="#0af" stroke-width="1.8" stroke-opacity="0.6" fill="none" stroke-linecap="round"/>
+<path d="M 528 528 L 528 508 M 528 528 L 508 528" stroke="#0af" stroke-width="1.8" stroke-opacity="0.6" fill="none" stroke-linecap="round"/>
+<text x="565" y="336" font-family="Courier New" font-size="9" fill="#0af" fill-opacity="0.45">SYS</text>
+<text x="565" y="348" font-family="Courier New" font-size="9" fill="#0af" fill-opacity="0.45">LIVE</text>
+<text x="100" y="336" font-family="Courier New" font-size="9" fill="#0af" fill-opacity="0.45" text-anchor="end">V2.0</text>
+<text x="100" y="348" font-family="Courier New" font-size="9" fill="#0af" fill-opacity="0.45" text-anchor="end">IDLE</text>
+</svg>
