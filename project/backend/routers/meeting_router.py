@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from services import mistral_service
+from services import qwen_service
 
 router = APIRouter(tags=["Meeting & History"])
 
@@ -33,11 +33,10 @@ def summarize_meeting(req: MeetingRequest, db: Session = Depends(get_db)):
         "2. A list of action items with owners if mentioned\n\n"
         f"Transcription:\n{req.transcription}"
     )
-    result = mistral_service.run(summary_instruction, max_new_tokens=400)
+    result = qwen_service.run(summary_instruction, max_new_tokens=400)
 
-    # Try to split summary and action items
-    lines       = result.split("\n")
-    summary     = result
+    lines        = result.split("\n")
+    summary      = result
     action_items = ""
     for i, line in enumerate(lines):
         if "action" in line.lower():
@@ -120,10 +119,10 @@ def meeting_history(limit: int = 10, db: Session = Depends(get_db)):
     return {
         "meetings": [
             {
-                "summary":      m.summary,
-                "action_items": m.action_items,
+                "summary":       m.summary,
+                "action_items":  m.action_items,
                 "duration_secs": m.duration_secs,
-                "time":         str(m.created_at),
+                "time":          str(m.created_at),
             }
             for m in meetings
         ]

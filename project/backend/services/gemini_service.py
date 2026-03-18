@@ -1,17 +1,13 @@
 """
-VOID Backend — Gemini Vision Service
-Uses google-genai (new SDK) for image/screenshot understanding
+VOID Backend — Groq Vision Service
+Uses Groq API (free) for image/screenshot understanding
 """
-from google import genai
-from google.genai import types
-from PIL import Image
-from io import BytesIO
 import base64
-from config import GEMINI_API_KEY
+from groq import Groq
+from config import GROQ_API_KEY
 
-# ── Configure Gemini ──────────────────────────────────────────────────────────
-_client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL   = "gemini-1.5-flash-002"
+_client = Groq(api_key=GROQ_API_KEY)
+MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 SYSTEM_PROMPT = "You are VOID, an intelligent AI screen assistant. Be concise, clear, and helpful."
 
@@ -37,35 +33,57 @@ ACTION_PROMPTS = {
 }
 
 
-def decode_image(b64_string: str) -> Image.Image:
-    img_bytes = base64.b64decode(b64_string)
-    return Image.open(BytesIO(img_bytes))
-
-
 def analyze(screenshot_b64: str, action: str) -> str:
-    """Send screenshot to Gemini Vision and get analysis based on action type."""
-    img = decode_image(screenshot_b64)
+    """Send screenshot to Groq Vision and get analysis based on action type."""
     prompt_text = ACTION_PROMPTS.get(action, ACTION_PROMPTS["explain"])
-    full_prompt  = f"{SYSTEM_PROMPT}\n\n{prompt_text}"
+    full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt_text}"
 
-    response = _client.models.generate_content(
-    model="gemini-1.5-flash",  # Ensure no 'models/' prefix
-    contents=...
-)
-    return response.text
+    response = _client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{screenshot_b64}"
+                        },
+                    },
+                    {"type": "text", "text": full_prompt},
+                ],
+            }
+        ],
+        max_tokens=500,
+    )
+    return response.choices[0].message.content.strip()
 
 
 def describe_image(screenshot_b64: str, user_question: str = "") -> str:
     """General purpose image description with optional user question."""
-    img = decode_image(screenshot_b64)
     prompt = (
         f"{SYSTEM_PROMPT}\n\n"
         "Look at this screen carefully and provide a thorough explanation. "
         "Describe text content, visual elements, charts, code, or anything visible. "
         f"{'User question: ' + user_question if user_question else ''}"
     )
-    response = _client.models.generate_content(
-    model="gemini-1.5-flash",  # Ensure no 'models/' prefix
-    contents=...
-)
-    return response.text
+
+    response = _client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{screenshot_b64}"
+                        },
+                    },
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ],
+        max_tokens=500,
+    )
+    return response.choices[0].message.content.strip()

@@ -49,10 +49,10 @@ def initialize_database():
 @app.get("/health", tags=["Health"])
 def health():
     return {
-        "status":  "VOID is alive ✅",
-        "model":   "Mistral-7B-v0.1 + Telugu LoRA",
-        "vision":  "Gemini 1.5 Flash",
-        "version": "1.0.0",
+        "status":   "VOID is alive ✅",
+        "model":    "Qwen2.5-3B (GGUF)",
+        "vision":   "Gemini 1.5 Flash",
+        "version":  "1.0.0",
         "database": "ready" if DB_INIT_ERROR is None else "unavailable",
         "database_error": DB_INIT_ERROR,
     }

@@ -8,7 +8,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from services import mistral_service
+from services import qwen_service
 
 router = APIRouter(prefix="/text", tags=["Text Actions"])
 
@@ -41,7 +41,7 @@ def suggest(req: TextRequest, db: Session = Depends(get_db)):
         "Keep it natural and conversational.\n\n"
         f"Conversation:\n{req.text}"
     )
-    result = mistral_service.run(instruction, max_new_tokens=150)
+    result = qwen_service.run(instruction, max_new_tokens=150)
 
     log = models.ActionLog(
         action="suggest",
@@ -65,7 +65,7 @@ def summarize(req: TextRequest, db: Session = Depends(get_db)):
         "Capture only the most important information.\n\n"
         f"Content:\n{req.text}"
     )
-    result = mistral_service.run(instruction, max_new_tokens=200)
+    result = qwen_service.run(instruction, max_new_tokens=200)
 
     log = models.ActionLog(
         action="summarize",
@@ -89,7 +89,7 @@ def translate(req: TranslateRequest, db: Session = Depends(get_db)):
     else:
         instruction = f"Translate the following Telugu text to English:\n\n{req.text}"
 
-    result = mistral_service.run(instruction, max_new_tokens=300)
+    result = qwen_service.run(instruction, max_new_tokens=300)
 
     log = models.ActionLog(
         action="translate",
