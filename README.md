@@ -1,7 +1,5 @@
 
-<p align="center">
-  <img src="assets/void_logo.svg" width="180" alt="VOID">
-</p>
+<img src="assets/void_logo.svg" width="180" alt="VOID">
 
 # VOID — AI Screen Assistant
 > A floating AI desktop assistant that reads your screen, understands Telugu, and helps you reply, summarize, translate, and draft — powered entirely by local models.
