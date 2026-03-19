@@ -1,6 +1,7 @@
 # VOID Frontend Dependencies
-PyQt5==5.15.10
+PyQt6==6.7.0
 pyautogui==0.9.54
+keyboard==0.13.5
 openai-whisper
 sounddevice==0.4.6
 scipy==1.13.0
@@ -9,3 +10,18 @@ Pillow==10.3.0
 pyttsx3==2.90
 requests==2.31.0
 easyocr==1.7.1
+
+# VOID Backend Dependencies
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.0
+sqlalchemy==2.0.30
+requests==2.31.0
+
+# LangGraph Agent
+langgraph==0.0.55
+langchain-core==0.2.0
+langchain-community==0.2.0
+
+# Ollama (runs separately)
+# ollama serve
