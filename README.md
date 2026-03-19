@@ -1,5 +1,15 @@
-# VOID v3.0 — AI Screen Assistant
-> A floating AI desktop assistant powered by LangGraph, local LLMs, and persistent memory. Fully offline with no API dependencies for text or vision.
+
+<p align="center">
+  <img src="assets/void_logo.svg" width="280" alt="VOID" style="margin-bottom: 20px;">
+</p>
+# VOID — AI Screen Assistant
+> A floating AI desktop assistant that reads your screen, understands Telugu, and helps you reply, summarize, translate, and draft — powered entirely by local models.
+
+---
+
+## Overview
+
+VOID runs as a frameless floating widget on your Windows desktop. It uses **Qwen2.5-3B** (GGUF, CPU-only) for all text tasks and **Groq Vision** for screen understanding. No cloud LLM dependency for text generation — everything runs on your machine.
 
 ---
 
@@ -138,4 +148,6 @@ SCREENSHOTS_ROOT=C:\Users\You\Pictures\VOID
 
 ---
 
-*VOID — local-first AI assistant with agentic planning*
+*VOID — local-first AI assistant for Telugu users.*
+```
+
