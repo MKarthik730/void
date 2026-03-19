@@ -17,14 +17,16 @@ VOID runs as a frameless floating widget on your Windows desktop. It uses **Qwen
 
 | Action | Description |
 |---|---|
-| WhatsApp Reply | Captures the active chat, extracts messages, generates 3 Tenglish reply suggestions |
-| Screenshot | Saves a timestamped PNG to `~/Pictures/VOID/` |
-| Voice Type | Transcribes mic input via Whisper and types it into the active window |
-| Explain Screen | Sends a screenshot to Groq Vision for full content explanation |
-| Translate | Extracts and translates on-screen text to English |
-| Summarize | Summarizes screen content into bullet points |
-| Email Draft | Converts a voice note into a structured professional email |
-| Ask VOID | Persistent chat window backed by Qwen |
+| LangGraph Agent | Multi-step task planning and execution |
+| WhatsApp Reply | Captures chat, generates 3 Tenglish suggestions via Ollama Vision |
+| Screenshot | Saves PNG to `~/Pictures/VOID/` |
+| Voice Type | Transcribes mic via Whisper, types into active window |
+| Explain Screen | Analyzes screen with local vision model (llava/moondream) |
+| Translate | Extracts and translates on-screen text |
+| Summarize | Summarizes screen content |
+| Email Draft | Voice note to professional email |
+| Ask VOID | Persistent chat with memory across sessions |
+| Alt+Space Hotkey | Summon VOID from anywhere |
 
 ---
 
@@ -34,19 +36,16 @@ VOID runs as a frameless floating widget on your Windows desktop. It uses **Qwen
 void/
 ├── project/
 │   ├── backend/
-│   │   ├── main.py                  # FastAPI app entry point
-│   │   ├── config.py                # Loads .env, exports constants
-│   │   ├── database.py              # SQLAlchemy engine + session
-│   │   ├── models.py                # ORM models (ActionLog, VoiceLog, etc.)
-│   │   ├── routers/
-│   │   │   ├── text_router.py       # POST /text/*
-│   │   │   ├── screen_router.py     # POST /screen/*
-│   │   │   └── meeting_router.py    # POST /meeting/*, GET /history/*
+│   │   ├── main.py                  # FastAPI + LangGraph agent
+│   │   ├── config.py               # Environment configuration
+│   │   ├── agent/
+│   │   │   └── void_agent.py       # LangGraph agentic core
 │   │   └── services/
-│   │       ├── qwen_service.py      # llama-cpp-python wrapper for Qwen
-│   │       └── gemini_service.py    # Groq Vision API client
+│   │       ├── ollama_service.py   # Ollama LLM client
+│   │       ├── vision_service.py   # Local vision (llava/moondream)
+│   │       └── memory_service.py   # SQLite RAG memory
 │   └── frontend/
-│       └── void_ball.py             # PyQt5 floating HUD
+│       └── void_ball.py            # PyQt6 glassmorphism UI
 ```
 
 ---
@@ -55,88 +54,50 @@ void/
 
 | Layer | Technology |
 |---|---|
-| LLM | Qwen2.5-3B-Instruct Q4\_K\_M (GGUF) via llama-cpp-python, CPU only |
-| Vision | Groq API — llama-4-scout-17b-16e-instruct |
-| ASR | OpenAI Whisper tiny, runs locally |
+| Agent | LangGraph 0.0.x — multi-step planning |
+| LLM | Qwen2.5 via Ollama (local) |
+| Vision | Ollama llava or moondream (local) |
+| Memory | SQLite RAG — persistent context |
+| ASR | OpenAI Whisper tiny (local) |
 | TTS | pyttsx3 |
-| Backend | FastAPI, SQLAlchemy, PostgreSQL, psycopg2 |
-| Frontend | PyQt5, pyautogui, Pillow |
-
----
-
-## Requirements
-
-- Windows 10/11
-- Python 3.12
-- PostgreSQL running locally
-- Qwen2.5-3B GGUF model file
-- Groq API key — free tier at [console.groq.com](https://console.groq.com)
+| Backend | FastAPI + Pydantic |
+| Frontend | PyQt6 with glassmorphism |
 
 ---
 
 ## Setup
 
-### 1. Clone
+### 1. Prerequisites
 
 ```bash
-git clone https://github.com/MKarthik730/void.git
-cd void/project
+# Install Ollama
+winget install Ollama.Ollama
+
+# Pull models
+ollama pull qwen2.5:3b
+ollama pull llava
 ```
 
-### 2. Backend dependencies
+### 2. Install dependencies
 
 ```bash
-cd backend
 pip install -r requirements.txt
 ```
 
-### 3. Frontend dependencies
+### 3. Start Ollama (in separate terminal)
 
 ```bash
-pip install PyQt5 pyautogui pyttsx3 openai-whisper sounddevice scipy requests Pillow
+ollama serve
 ```
 
-### 4. Download the model
-
-Get `qwen2.5-3b-instruct-q4_k_m.gguf` from HuggingFace and place it at:
-
-```
-D:\models\qwen2.5-3b-instruct-q4_k_m.gguf
-```
-
-Update `QWEN_GGUF_PATH` in `.env` if you use a different path.
-
-### 5. Configure environment
-
-Create `project/backend/.env`. Do not commit this file.
-
-```env
-QWEN_GGUF_PATH=D:\models\qwen2.5-3b-instruct-q4_k_m.gguf
-GROQ_API_KEY=your_groq_key_here
-
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=void
-```
-
-### 6. Database setup
-
-```sql
-CREATE DATABASE void;
-GRANT ALL ON SCHEMA public TO postgres;
-ALTER SCHEMA public OWNER TO postgres;
-```
-
-### 7. Start the backend
+### 4. Start backend
 
 ```bash
 cd project/backend
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 8. Start the frontend
+### 5. Start frontend
 
 ```bash
 cd project/frontend
@@ -145,72 +106,45 @@ python void_ball.py
 
 ---
 
-## API Reference
+## API Endpoints
 
 | Method | Route | Description |
 |---|---|---|
-| POST | `/text/suggest` | Generate a reply from input text |
-| POST | `/text/summarize` | Summarize input text |
-| POST | `/text/translate` | Translate between Telugu and English |
-| POST | `/text/voice-log` | Persist a voice transcription |
-| POST | `/screen/analyze` | Screenshot analysis — suggest, summarize, or translate |
-| POST | `/screen/explain` | Deep explanation of screenshot via Groq Vision |
-| POST | `/screen/whatsapp-suggest` | Extract chat from screenshot, return Tenglish replies |
-| POST | `/screen/save-screenshot` | Write screenshot PNG to disk |
-| POST | `/meeting/summarize` | Summarize meeting transcript, extract action items |
-| GET | `/history/actions` | Last N action logs |
-| GET | `/history/voice` | Last N voice transcription logs |
-| GET | `/history/meetings` | Last N meeting summaries |
-| GET | `/health` | Service health and model status |
-
-Full interactive docs at `http://localhost:8000/docs`.
+| POST | `/agent/query` | LangGraph agent (multi-step planning) |
+| POST | `/agent/simple` | Direct LLM query |
+| POST | `/vision/analyze` | Analyze screenshot |
+| POST | `/vision/explain` | Explain screen content |
+| POST | `/vision/whatsapp-suggest` | Generate WhatsApp replies |
+| POST | `/vision/save-screenshot` | Save screenshot |
+| GET | `/memory/history` | Conversation history |
+| GET | `/memory/actions` | Action history |
+| POST | `/memory/remember` | Store important fact |
+| POST | `/memory/recall` | Retrieve relevant memories |
+| GET | `/health` | Service status |
 
 ---
 
-## WhatsApp Reply — How It Works
+## Configuration
 
-1. Open WhatsApp Desktop to an active chat
-2. Click the WhatsApp button on the VOID ball
-3. Click **SCAN WHATSAPP CHAT**
-4. VOID hides, takes a screenshot, re-shows
-5. Groq Vision extracts the last few messages
-6. Qwen generates 3 context-aware Tenglish replies
-7. Click a reply — VOID focuses WhatsApp, pastes, and sends
+Create `project/backend/.env`:
 
----
-
-## Environment Variables
-
-| Variable | Description | Default |
-|---|---|---|
-| `QWEN_GGUF_PATH` | Absolute path to the GGUF model file | `D:\models\qwen2.5-3b-instruct-q4_k_m.gguf` |
-| `GROQ_API_KEY` | Groq API key for vision inference | required |
-| `POSTGRES_USER` | Database user | `postgres` |
-| `POSTGRES_PASSWORD` | Database password | required |
-| `POSTGRES_HOST` | Database host | `localhost` |
-| `POSTGRES_PORT` | Database port | `5432` |
-| `POSTGRES_DB` | Database name | `void` |
-
----
-
-## Notes
-
-- `.env` must be in `.gitignore`. Never push API keys or passwords.
-- Qwen runs fully on CPU. 4-8 GB RAM is sufficient for the Q4 quantized model.
-- Whisper `tiny` prioritizes speed. Switch to `base` or `small` for better accuracy at the cost of load time.
-- Groq free tier enforces per-minute rate limits. If vision calls fail, wait 30-60 seconds and retry.
-- The WhatsApp auto-send clicks at the bottom-center of the screen. Keep the WhatsApp input box in its default position.
+```env
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:3b
+VISION_MODEL=llava
+SCREENSHOTS_ROOT=C:\Users\You\Pictures\VOID
+```
 
 ---
 
 ## Dependencies
 
-- [llama-cpp-python](https://github.com/abetlen/llama-cpp-python)
+- [LangGraph](https://langchain-ai.github.io/langgraph/)
+- [Ollama](https://ollama.ai)
 - [Qwen2.5](https://huggingface.co/Qwen)
-- [Groq](https://console.groq.com)
+- [llava](https://llava-vl.github.io/)
+- [PyQt6](https://pypi.org/project/PyQt6/)
 - [OpenAI Whisper](https://github.com/openai/whisper)
-- [FastAPI](https://fastapi.tiangolo.com)
-- [PyQt5](https://pypi.org/project/PyQt5/)
 
 ---
 

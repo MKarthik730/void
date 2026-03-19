@@ -1,23 +1,32 @@
 """
-VOID AI Assistant — FastAPI Backend
-Entry point: registers all routers and sets up DB
+VOID AI Assistant — FastAPI Backend with LangGraph Agentic Core
 """
-# config.py MUST be imported first — sets HF env vars before torch loads
-import config  # noqa: F401
+
+import config
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.exc import SQLAlchemyError
-from database import engine, Base
-from routers import text_router, screen_router, meeting_router
+from pydantic import BaseModel
+import os
 
-DB_INIT_ERROR = None
+from services.memory_service import (
+    init_memory_db,
+    get_recent_conversations,
+    get_action_history,
+    log_action,
+    add_conversation,
+)
+from services.vision_service import (
+    analyze as vision_analyze,
+    describe_image as vision_describe,
+)
+from services.ollama_service import run as llm_run
+from agent.void_agent import run_agent, run_simple
 
-# ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(
     title="VOID AI Assistant API",
-    description="Backend for VOID — Telugu AI Screen Assistant",
-    version="1.0.0",
+    description="LangGraph-powered AI assistant with multi-step planning",
+    version="3.0.0",
 )
 
 app.add_middleware(
@@ -27,36 +36,177 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Register routers ──────────────────────────────────────────────────────────
-app.include_router(text_router.router)
-app.include_router(screen_router.router)
-app.include_router(meeting_router.router)
+init_memory_db()
+
+
+class AgentQuery(BaseModel):
+    text: str
+
+
+class VisionRequest(BaseModel):
+    screenshot_b64: str
+    action: str = "explain"
+    question: str = ""
+
+
+class ScreenshotSave(BaseModel):
+    screenshot_b64: str
+
+
+class WhatsAppSuggest(BaseModel):
+    screenshot_b64: str
 
 
 @app.on_event("startup")
-def initialize_database():
-    global DB_INIT_ERROR
-
-    try:
-        Base.metadata.create_all(bind=engine)
-        DB_INIT_ERROR = None
-    except SQLAlchemyError as exc:
-        DB_INIT_ERROR = str(exc)
-        print(f"WARNING: Database initialization skipped: {exc}")
+async def startup():
+    print("=" * 50)
+    print("VOID v3.0 — LangGraph Agentic Core")
+    print("=" * 50)
+    print("Starting services...")
 
 
-# ── Health check ──────────────────────────────────────────────────────────────
-@app.get("/health", tags=["Health"])
+@app.get("/health")
 def health():
     return {
-        "status":   "VOID is alive ✅",
-        "model":    "Qwen2.5-3B (GGUF)",
-        "vision":   "Gemini 1.5 Flash",
-        "version":  "1.0.0",
-        "database": "ready" if DB_INIT_ERROR is None else "unavailable",
-        "database_error": DB_INIT_ERROR,
+        "status": "VOID is alive",
+        "version": "3.0.0",
+        "agent": "LangGraph + Ollama Qwen2.5",
+        "vision": "Ollama llava/moondream",
+        "memory": "SQLite RAG",
     }
 
 
-# ── Run ───────────────────────────────────────────────────────────────────────
-# uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+@app.post("/agent/query")
+def agent_query(request: AgentQuery):
+    """Main agent endpoint - uses LangGraph for multi-step planning."""
+    try:
+        response = run_agent(request.text)
+        log_action("agent_query", request.text, response, success=True)
+        return {"response": response}
+    except Exception as e:
+        return {"error": str(e), "response": "Agent failed to respond"}
+
+
+@app.post("/agent/simple")
+def simple_query(request: AgentQuery):
+    """Direct LLM query without agent planning."""
+    try:
+        response = llm_run(request.text, max_tokens=300)
+        add_conversation(request.text, response)
+        return {"response": response}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/vision/analyze")
+def vision_analyze_endpoint(request: VisionRequest):
+    """Analyze screenshot with vision model."""
+    try:
+        result = vision_analyze(request.screenshot_b64, request.action)
+        return {"result": result}
+    except Exception as e:
+        return {"error": str(e), "result": ""}
+
+
+@app.post("/vision/explain")
+def vision_explain_endpoint(request: VisionRequest):
+    """Explain what's on screen."""
+    try:
+        result = vision_describe(request.screenshot_b64, request.question)
+        return {"explanation": result}
+    except Exception as e:
+        return {"error": str(e), "explanation": ""}
+
+
+@app.post("/vision/whatsapp-suggest")
+def whatsapp_suggest(request: WhatsAppSuggest):
+    """Generate WhatsApp reply suggestions."""
+    try:
+        result = vision_analyze(request.screenshot_b64, "suggest")
+
+        suggestions = []
+        lines = [l.strip() for l in result.split("\n") if l.strip()]
+        for line in lines[:3]:
+            clean = line.strip("-*1234567890. ").strip()
+            if clean and len(clean) < 80:
+                suggestions.append(clean)
+
+        if not suggestions:
+            suggestions = ["Haan bro, cool", "Okay done ra", "Sare, I'll check"]
+
+        log_action("whatsapp_suggest", "", str(suggestions), success=True)
+        return {"suggestions": suggestions[:3]}
+    except Exception as e:
+        return {"error": str(e), "suggestions": []}
+
+
+@app.post("/vision/save-screenshot")
+def save_screenshot(request: ScreenshotSave):
+    """Save screenshot to disk."""
+    try:
+        import base64
+        from PIL import Image
+        from io import BytesIO
+
+        screenshots_dir = os.path.join(os.path.expanduser("~"), "Pictures", "VOID")
+        os.makedirs(screenshots_dir, exist_ok=True)
+
+        image_data = base64.b64decode(request.screenshot_b64)
+        img = Image.open(BytesIO(image_data))
+
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filepath = os.path.join(screenshots_dir, f"void_{timestamp}.png")
+
+        img.save(filepath)
+
+        log_action("screenshot_save", "", filepath, success=True)
+        return {"saved_to": filepath}
+    except Exception as e:
+        return {"error": str(e), "saved_to": ""}
+
+
+@app.get("/memory/history")
+def memory_history(limit: int = 10):
+    """Get conversation history."""
+    try:
+        history = get_recent_conversations(limit)
+        return {"history": history}
+    except Exception as e:
+        return {"error": str(e), "history": []}
+
+
+@app.get("/memory/actions")
+def memory_actions(limit: int = 20):
+    """Get action history."""
+    try:
+        actions = get_action_history(limit)
+        return {"history": actions}
+    except Exception as e:
+        return {"error": str(e), "history": []}
+
+
+@app.post("/memory/remember")
+def memory_remember(key: str, value: str, category: str = "general"):
+    """Store an important memory."""
+    from services.memory_service import add_memory
+
+    content = f"{key}: {value}"
+    add_memory(content, category, importance=2)
+    return {"status": "remembered", "content": content}
+
+
+@app.post("/memory/recall")
+def memory_recall(query: str):
+    """Recall relevant memories."""
+    from services.memory_service import get_context_for_query
+
+    context = get_context_for_query(query, memory_limit=5, history_limit=5)
+    return {"context": context}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
