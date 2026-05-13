@@ -7,9 +7,6 @@ import base64
 import requests
 from config import OLLAMA_HOST, VISION_MODEL
 
-VISION_MODEL = "llava"  # or "moondream"
-OLLAMA_HOST = "http://localhost:11434"
-
 ACTION_PROMPTS = {
     "suggest": (
         "Look at this chat screenshot. Understand the conversation context "

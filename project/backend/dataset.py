@@ -2,11 +2,16 @@
 Run this on your PC to generate a large synthetic Tenglish dataset using Gemini.
 pip install google-genai
 """
+
 from google import genai
 import json
 import time
 
-API_KEY = "AIzaSyDa8Q7XB6CKnpAGeB6R1OThQOzrgS5FAIo"
+import os
+
+API_KEY = os.getenv("GEMINI_API_KEY", "")
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is not set")
 client = genai.Client(api_key=API_KEY)
 
 TOPICS = [
@@ -21,7 +26,6 @@ TOPICS = [
     "rain and weather talk",
     "auto and cab problems",
     "stuck in traffic conversation",
-
     # Food
     "talking about biryani and food",
     "ordering food online zomato swiggy",
@@ -31,7 +35,6 @@ TOPICS = [
     "discussing favourite street food",
     "tea vs coffee debate",
     "trying new restaurant",
-
     # College and studies
     "sharing exam stress",
     "asking for help with studies",
@@ -43,7 +46,6 @@ TOPICS = [
     "professor is strict conversation",
     "placement and campus interview",
     "semester exam preparation",
-
     # Movies and entertainment
     "discussing Pokiri Mahesh Babu dialogues",
     "talking about Pushpa movie",
@@ -59,7 +61,6 @@ TOPICS = [
     "talking about Allu Arjun",
     "discussing Prabhas movies",
     "talking about Vijay Deverakonda",
-
     # Cricket and sports
     "India won cricket match celebration",
     "India lost match disappointment",
@@ -68,7 +69,6 @@ TOPICS = [
     "playing cricket in street",
     "fantasy cricket team discussion",
     "kabaddi or other sports",
-
     # Relationships and love
     "discussing girlfriend or boyfriend",
     "crush proposal advice",
@@ -80,7 +80,6 @@ TOPICS = [
     "long distance relationship problems",
     "Valentine's day plans",
     "fighting with girlfriend or boyfriend",
-
     # Friends and friendship
     "planning to hangout together",
     "roasting each other jokes",
@@ -92,7 +91,6 @@ TOPICS = [
     "old memories nostalgia",
     "introducing new friend to group",
     "friend group drama",
-
     # Emotions and mental health
     "motivating a sad friend",
     "sharing good news excitement",
@@ -104,7 +102,6 @@ TOPICS = [
     "overthinking at night",
     "feeling ignored by friends",
     "stress relief conversation",
-
     # Work and career
     "talking about salary and job",
     "office politics discussion",
@@ -116,7 +113,6 @@ TOPICS = [
     "freelancing conversation",
     "career confusion advice",
     "switching jobs discussion",
-
     # Family
     "talking about family pressure",
     "parents asking about marriage",
@@ -126,7 +122,6 @@ TOPICS = [
     "dad not understanding technology",
     "relatives visit tension",
     "asking parents for money",
-
     # Technology and social media
     "discussing new phone",
     "phone battery dying",
@@ -138,7 +133,6 @@ TOPICS = [
     "YouTube shorts addiction",
     "online shopping discussion",
     "UPI payment problem",
-
     # Funny and jokes
     "sharing a funny joke",
     "roasting friend's fashion",
@@ -148,7 +142,6 @@ TOPICS = [
     "sending message to wrong person",
     "friend doing cringe thing",
     "funny college memory",
-
     # Money and finance
     "asking friend to return money",
     "splitting bill after outing",
@@ -156,14 +149,12 @@ TOPICS = [
     "saving money tips",
     "month end broke situation",
     "getting first salary celebration",
-
     # Health
     "sick and asking for help",
     "gym motivation conversation",
     "dieting gone wrong",
     "hangover recovery chat",
     "doctor visit fear",
-
     # Miscellaneous
     "asking for life advice",
     "discussing astrology and horoscope",
@@ -215,7 +206,7 @@ for i, topic in enumerate(TOPICS):
             contents=PROMPT_TEMPLATE.format(topic=topic),
         )
 
-        text = response.text.strip()
+        text = (response.text or "").strip()
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0].strip()
         elif "```" in text:
@@ -223,9 +214,15 @@ for i, topic in enumerate(TOPICS):
 
         pairs = json.loads(text)
         # Filter quality
-        pairs = [p for p in pairs if len(p.get('instruction','')) > 5 and len(p.get('output','')) > 5]
+        pairs = [
+            p
+            for p in pairs
+            if len(p.get("instruction", "")) > 5 and len(p.get("output", "")) > 5
+        ]
         all_pairs.extend(pairs)
-        print(f"✅ {i+1}/{len(TOPICS)} '{topic}': {len(pairs)} pairs (total: {len(all_pairs)})")
+        print(
+            f"✅ {i + 1}/{len(TOPICS)} '{topic}': {len(pairs)} pairs (total: {len(all_pairs)})"
+        )
 
         # Save progress every 10 topics
         if (i + 1) % 10 == 0:

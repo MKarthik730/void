@@ -1,13 +1,11 @@
 """
 VOID Backend — Ollama LLM Service
-Uses Ollama API to run Qwen2.5 locally
+Uses Ollama API to run Qwen3 locally
 """
 
+from typing import Optional
 import requests
 from config import OLLAMA_HOST, OLLAMA_MODEL
-
-OLLAMA_MODEL = "qwen2.5-coder:3b"
-OLLAMA_HOST = "http://localhost:11434"
 
 SYSTEM_PROMPT = (
     "You are VOID, a friendly AI assistant for Telugu users. "
@@ -27,7 +25,10 @@ def _is_ollama_running() -> bool:
 
 
 def run(
-    prompt: str, system: str = None, max_tokens: int = 300, temperature: float = 0.7
+    prompt: str,
+    system: Optional[str] = None,
+    max_tokens: int = 300,
+    temperature: float = 0.7,
 ) -> str:
     """Run Qwen via Ollama API."""
     if not _is_ollama_running():
@@ -60,7 +61,7 @@ def run(
         return f"ERROR: LLM request failed - {str(e)}"
 
 
-def run_streaming(prompt: str, system: str = None, max_tokens: int = 300):
+def run_streaming(prompt: str, system: Optional[str] = None, max_tokens: int = 300):
     """Stream response from Ollama."""
     if not _is_ollama_running():
         yield "ERROR: Ollama is not running."

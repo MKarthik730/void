@@ -22,6 +22,9 @@ from services.vision_service import (
 )
 from services.ollama_service import run as llm_run
 from agent.void_agent import run_agent, run_simple
+from routers.screen_router import router as screen_router
+from routers.text_router import router as text_router
+from routers.meeting_router import router as meeting_router
 
 app = FastAPI(
     title="VOID AI Assistant API",
@@ -35,6 +38,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(screen_router)
+app.include_router(text_router)
+app.include_router(meeting_router)
 
 init_memory_db()
 
@@ -57,6 +64,16 @@ class WhatsAppSuggest(BaseModel):
     screenshot_b64: str
 
 
+class MemoryRememberRequest(BaseModel):
+    key: str
+    value: str
+    category: str = "general"
+
+
+class MemoryRecallRequest(BaseModel):
+    query: str
+
+
 @app.on_event("startup")
 async def startup():
     print("=" * 50)
@@ -70,7 +87,7 @@ def health():
     return {
         "status": "VOID is alive",
         "version": "3.0.0",
-        "agent": "LangGraph + Ollama Qwen2.5",
+        "agent": "LangGraph + Ollama Qwen3",
         "vision": "Ollama llava/moondream",
         "memory": "SQLite RAG",
     }
@@ -188,21 +205,21 @@ def memory_actions(limit: int = 20):
 
 
 @app.post("/memory/remember")
-def memory_remember(key: str, value: str, category: str = "general"):
+def memory_remember(request: MemoryRememberRequest):
     """Store an important memory."""
     from services.memory_service import add_memory
 
-    content = f"{key}: {value}"
-    add_memory(content, category, importance=2)
+    content = f"{request.key}: {request.value}"
+    add_memory(content, request.category, importance=2)
     return {"status": "remembered", "content": content}
 
 
 @app.post("/memory/recall")
-def memory_recall(query: str):
+def memory_recall(request: MemoryRecallRequest):
     """Recall relevant memories."""
     from services.memory_service import get_context_for_query
 
-    context = get_context_for_query(query, memory_limit=5, history_limit=5)
+    context = get_context_for_query(request.query, memory_limit=5, history_limit=5)
     return {"context": context}
 
 

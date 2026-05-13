@@ -1499,7 +1499,7 @@ def build_tray(app: QApplication, ball: VoidBall) -> QSystemTrayIcon:
         lambda: QMessageBox.information(
             None,
             "VOID",
-            "VOID AI Assistant v3.0\n\nQwen + Ollama + LangGraph\nChat · Email · WhatsApp Tenglish\nBuilt with PyQt6",
+            "VOID AI Assistant v3.0\n\nQwen3 + Ollama + LangGraph\nChat · Email · WhatsApp Tenglish\nBuilt with PyQt6",
         )
     )
 
@@ -1546,7 +1546,7 @@ if __name__ == "__main__":
         print("Run: pip install keyboard")
 
     print("VOID v3.0 is running!")
-    print("   LangGraph Agent + Ollama Qwen")
+    print("   LangGraph Agent + Ollama Qwen3")
     print("   Glassmorphism PyQt6 UI")
 
     sys.exit(app.exec())

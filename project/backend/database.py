@@ -1,17 +1,17 @@
 """
-VOID Backend — PostgreSQL Database Connection
+VOID Backend — SQLite Database Connection
 """
+
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 from config import DATABASE_URL
 
-engine       = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=5, max_overflow=10)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base         = declarative_base()
+Base = declarative_base()
+
 
 def get_db():
-    """Dependency injector for FastAPI routes"""
     db = SessionLocal()
     try:
         yield db

@@ -1,19 +1,7 @@
-# VOID Backend Requirements
 fastapi
 uvicorn
 sqlalchemy
-psycopg2-binary
 python-dotenv
 pydantic
-
-# LLM — Qwen2.5 via llama-cpp-python (CPU)
-llama-cpp-python
-
-# Vision — Gemini
-google-genai
-
-# Image processing
 Pillow
-
-# OCR
-easyocr
+requests

@@ -2,6 +2,7 @@
 VOID Backend — Screen Action Routes
 Routes: /screen/analyze, /screen/explain, /screen/whatsapp-suggest, /screen/save-screenshot
 """
+
 import os
 import re
 import base64
@@ -13,20 +14,20 @@ from sqlalchemy.orm import Session
 from database import get_db
 from config import SCREENSHOTS_ROOT
 import models
-from services import gemini_service
-from services import qwen_service
+from services import vision_service
+from services import ollama_service
 
 router = APIRouter(prefix="/screen", tags=["Screen Actions"])
 
 
 class ScreenRequest(BaseModel):
     screenshot_b64: str
-    action: str   # suggest | summarize | explain | translate
+    action: str  # suggest | summarize | explain | translate
 
 
 class ExplainRequest(BaseModel):
     screenshot_b64: str
-    question: Optional[str] = ""
+    question: str = ""
 
 
 class WhatsAppRequest(BaseModel):
@@ -42,7 +43,7 @@ class SaveScreenshotRequest(BaseModel):
 # ── Analyze Screen ────────────────────────────────────────────────────────────
 @router.post("/analyze")
 def analyze_screen(req: ScreenRequest, db: Session = Depends(get_db)):
-    result = gemini_service.analyze(req.screenshot_b64, req.action)
+    result = vision_service.analyze(req.screenshot_b64, req.action)
     log = models.ActionLog(
         action=req.action,
         input_text="[screenshot]",
@@ -56,7 +57,7 @@ def analyze_screen(req: ScreenRequest, db: Session = Depends(get_db)):
 # ── Explain Screen ────────────────────────────────────────────────────────────
 @router.post("/explain")
 def explain_screen(req: ExplainRequest, db: Session = Depends(get_db)):
-    result = gemini_service.describe_image(req.screenshot_b64, req.question)
+    result = vision_service.describe_image(req.screenshot_b64, req.question or "")
     log = models.ActionLog(
         action="explain",
         input_text=req.question or "[screenshot]",
@@ -81,7 +82,7 @@ def whatsapp_suggest(req: WhatsAppRequest, db: Session = Depends(get_db)):
         "Extract only the last 5 messages as plain text. "
         "Format: Speaker: message, one per line. Nothing else."
     )
-    chat_text = gemini_service.describe_image(req.screenshot_b64, extract_prompt)
+    chat_text = vision_service.describe_image(req.screenshot_b64, extract_prompt)
 
     # Step 2 — Qwen: generate 3 Tenglish replies based on extracted chat
     suggest_prompt = (
@@ -97,7 +98,7 @@ def whatsapp_suggest(req: WhatsAppRequest, db: Session = Depends(get_db)):
         f"Conversation:\n{chat_text}\n\n"
         "Reply suggestions:"
     )
-    raw = qwen_service.run(suggest_prompt, max_new_tokens=120)
+    raw = ollama_service.run(suggest_prompt, max_tokens=120)
 
     # Parse pipe-separated suggestions
     suggestions = [s.strip() for s in raw.split("|") if s.strip()][:3]
@@ -120,9 +121,11 @@ def whatsapp_suggest(req: WhatsAppRequest, db: Session = Depends(get_db)):
 # ── Save Screenshot ───────────────────────────────────────────────────────────
 @router.post("/save-screenshot")
 def save_screenshot(req: SaveScreenshotRequest, db: Session = Depends(get_db)):
-    timestamp   = datetime.now().strftime("%Y%m%d_%H%M%S")
-    folder_name = req.folder_name or f"VOID_Screenshots_{datetime.now().strftime('%Y-%m-%d')}"
-    folder_name = re.sub(r'[<>:"/\\|?*]', '_', folder_name)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder_name = (
+        req.folder_name or f"VOID_Screenshots_{datetime.now().strftime('%Y-%m-%d')}"
+    )
+    folder_name = re.sub(r'[<>:"/\\|?*]', "_", folder_name)
 
     save_dir = os.path.join(SCREENSHOTS_ROOT, folder_name)
     os.makedirs(save_dir, exist_ok=True)
@@ -156,10 +159,10 @@ def list_screenshots(limit: int = 20, db: Session = Depends(get_db)):
     return {
         "screenshots": [
             {
-                "path":    s.filepath,
-                "folder":  s.folder,
+                "path": s.filepath,
+                "folder": s.folder,
                 "context": s.context,
-                "time":    str(s.created_at),
+                "time": str(s.created_at),
             }
             for s in shots
         ]
