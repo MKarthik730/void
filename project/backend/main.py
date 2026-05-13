@@ -22,6 +22,9 @@ from services.vision_service import (
 )
 from services.ollama_service import run as llm_run
 from agent.void_agent import run_agent, run_simple
+from routers.screen_router import router as screen_router
+from routers.text_router import router as text_router
+from routers.meeting_router import router as meeting_router
 
 app = FastAPI(
     title="VOID AI Assistant API",
@@ -35,6 +38,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(screen_router)
+app.include_router(text_router)
+app.include_router(meeting_router)
 
 init_memory_db()
 
