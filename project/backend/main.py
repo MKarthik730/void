@@ -64,6 +64,16 @@ class WhatsAppSuggest(BaseModel):
     screenshot_b64: str
 
 
+class MemoryRememberRequest(BaseModel):
+    key: str
+    value: str
+    category: str = "general"
+
+
+class MemoryRecallRequest(BaseModel):
+    query: str
+
+
 @app.on_event("startup")
 async def startup():
     print("=" * 50)
@@ -195,21 +205,21 @@ def memory_actions(limit: int = 20):
 
 
 @app.post("/memory/remember")
-def memory_remember(key: str, value: str, category: str = "general"):
+def memory_remember(request: MemoryRememberRequest):
     """Store an important memory."""
     from services.memory_service import add_memory
 
-    content = f"{key}: {value}"
-    add_memory(content, category, importance=2)
+    content = f"{request.key}: {request.value}"
+    add_memory(content, request.category, importance=2)
     return {"status": "remembered", "content": content}
 
 
 @app.post("/memory/recall")
-def memory_recall(query: str):
+def memory_recall(request: MemoryRecallRequest):
     """Recall relevant memories."""
     from services.memory_service import get_context_for_query
 
-    context = get_context_for_query(query, memory_limit=5, history_limit=5)
+    context = get_context_for_query(request.query, memory_limit=5, history_limit=5)
     return {"context": context}
 
 
