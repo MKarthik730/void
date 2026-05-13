@@ -2,13 +2,14 @@
 VOID Backend — Meeting & History Routes
 Routes: /meeting/summarize, /history/actions, /history/voice
 """
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from services import qwen_service
+from services import ollama_service
 
 router = APIRouter(tags=["Meeting & History"])
 
@@ -33,14 +34,14 @@ def summarize_meeting(req: MeetingRequest, db: Session = Depends(get_db)):
         "2. A list of action items with owners if mentioned\n\n"
         f"Transcription:\n{req.transcription}"
     )
-    result = qwen_service.run(summary_instruction, max_new_tokens=400)
+    result = ollama_service.run(summary_instruction, max_new_tokens=400)
 
-    lines        = result.split("\n")
-    summary      = result
+    lines = result.split("\n")
+    summary = result
     action_items = ""
     for i, line in enumerate(lines):
         if "action" in line.lower():
-            summary      = "\n".join(lines[:i]).strip()
+            summary = "\n".join(lines[:i]).strip()
             action_items = "\n".join(lines[i:]).strip()
             break
 
@@ -53,7 +54,7 @@ def summarize_meeting(req: MeetingRequest, db: Session = Depends(get_db)):
     db.add(log)
     db.commit()
     return {
-        "summary":      summary,
+        "summary": summary,
         "action_items": action_items,
         "full_response": result,
     }
@@ -72,11 +73,11 @@ def action_history(limit: int = 20, db: Session = Depends(get_db)):
     return {
         "history": [
             {
-                "action":   l.action,
-                "input":    l.input_text,
-                "output":   l.output_text,
+                "action": l.action,
+                "input": l.input_text,
+                "output": l.output_text,
                 "language": l.language,
-                "time":     str(l.created_at),
+                "time": str(l.created_at),
             }
             for l in logs
         ]
@@ -97,9 +98,9 @@ def voice_history(limit: int = 20, db: Session = Depends(get_db)):
         "voice_logs": [
             {
                 "transcription": l.transcription,
-                "language":      l.language,
-                "action_taken":  l.action_taken,
-                "time":          str(l.created_at),
+                "language": l.language,
+                "action_taken": l.action_taken,
+                "time": str(l.created_at),
             }
             for l in logs
         ]
@@ -119,10 +120,10 @@ def meeting_history(limit: int = 10, db: Session = Depends(get_db)):
     return {
         "meetings": [
             {
-                "summary":       m.summary,
-                "action_items":  m.action_items,
+                "summary": m.summary,
+                "action_items": m.action_items,
                 "duration_secs": m.duration_secs,
-                "time":          str(m.created_at),
+                "time": str(m.created_at),
             }
             for m in meetings
         ]

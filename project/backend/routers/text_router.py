@@ -2,13 +2,14 @@
 VOID Backend — Text Action Routes
 Routes: /suggest, /summarize, /translate, /voice-log
 """
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 from database import get_db
 import models
-from services import qwen_service
+from services import ollama_service
 
 router = APIRouter(prefix="/text", tags=["Text Actions"])
 
@@ -20,7 +21,7 @@ class TextRequest(BaseModel):
 
 class TranslateRequest(BaseModel):
     text: str
-    target: str = "telugu"   # "telugu" or "english"
+    target: str = "telugu"  # "telugu" or "english"
 
 
 class VoiceLogRequest(BaseModel):
@@ -41,7 +42,7 @@ def suggest(req: TextRequest, db: Session = Depends(get_db)):
         "Keep it natural and conversational.\n\n"
         f"Conversation:\n{req.text}"
     )
-    result = qwen_service.run(instruction, max_new_tokens=150)
+    result = ollama_service.run(instruction, max_new_tokens=150)
 
     log = models.ActionLog(
         action="suggest",
@@ -65,7 +66,7 @@ def summarize(req: TextRequest, db: Session = Depends(get_db)):
         "Capture only the most important information.\n\n"
         f"Content:\n{req.text}"
     )
-    result = qwen_service.run(instruction, max_new_tokens=200)
+    result = ollama_service.run(instruction, max_new_tokens=200)
 
     log = models.ActionLog(
         action="summarize",
@@ -89,7 +90,7 @@ def translate(req: TranslateRequest, db: Session = Depends(get_db)):
     else:
         instruction = f"Translate the following Telugu text to English:\n\n{req.text}"
 
-    result = qwen_service.run(instruction, max_new_tokens=300)
+    result = ollama_service.run(instruction, max_new_tokens=300)
 
     log = models.ActionLog(
         action="translate",

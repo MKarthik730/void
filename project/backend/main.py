@@ -87,7 +87,7 @@ def health():
     return {
         "status": "VOID is alive",
         "version": "3.0.0",
-        "agent": "LangGraph + Ollama Qwen2.5",
+        "agent": "LangGraph + Ollama Qwen3",
         "vision": "Ollama llava/moondream",
         "memory": "SQLite RAG",
     }

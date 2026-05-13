@@ -1,6 +1,6 @@
 """
 VOID Backend — Ollama LLM Service
-Uses Ollama API to run Qwen2.5 locally
+Uses Ollama API to run Qwen3 locally
 """
 
 from typing import Optional
