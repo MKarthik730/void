@@ -24,3 +24,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 SCREENSHOTS_ROOT = os.path.join(os.path.expanduser("~"), "Pictures", "VOID")
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'void_memory.db')}",
+)
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'void_memory.db')}",
+)
