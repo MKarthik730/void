@@ -34,7 +34,7 @@ def summarize_meeting(req: MeetingRequest, db: Session = Depends(get_db)):
         "2. A list of action items with owners if mentioned\n\n"
         f"Transcription:\n{req.transcription}"
     )
-    result = ollama_service.run(summary_instruction, max_new_tokens=400)
+    result = ollama_service.run(summary_instruction, max_tokens=400)
 
     lines = result.split("\n")
     summary = result
