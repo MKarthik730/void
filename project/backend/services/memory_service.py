@@ -1,141 +1,132 @@
 """
-VOID Backend — Memory Service (RAG with SQLite)
-Persistent memory across sessions
+VOID — Memory Service (pgvector RAG)
+Handles DB unavailability gracefully — returns empty results when PostgreSQL is down.
 """
 
-import sqlite3
-import json
-import hashlib
-from datetime import datetime
-from typing import List, Optional, Tuple
-import os
+from typing import List, Optional
+from sqlalchemy import text
+from database import SessionLocal, init_db, is_db_available
+from models import Conversation, Memory
+from services.embedding_service import embed
 
-MEMORY_DB = os.path.join(os.path.dirname(__file__), "..", "..", "void_memory.db")
-
-
-def _get_db():
-    conn = sqlite3.connect(MEMORY_DB, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Initialize DB if possible (won't crash if PostgreSQL is down)
+init_db()
 
 
 def init_memory_db():
-    """Initialize memory database tables."""
-    conn = _get_db()
-    cursor = conn.cursor()
+    pass
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS conversations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_message TEXT NOT NULL,
-            assistant_response TEXT NOT NULL,
-            context TEXT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+
+def _get_session():
+    """Get a DB session or None if unavailable."""
+    if not is_db_available():
+        return None
+    try:
+        return SessionLocal()
+    except Exception:
+        return None
+
+
+def add_conversation(user_msg: str, assistant_resp: str, context: Optional[str] = None):
+    db = _get_session()
+    if db is None:
+        return
+    try:
+        db.add(
+            Conversation(
+                user_message=user_msg, assistant_response=assistant_resp, context=context
+            )
         )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS memories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content TEXT NOT NULL,
-            embedding BLOB,
-            category TEXT DEFAULT 'general',
-            importance INTEGER DEFAULT 1,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS action_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            action TEXT NOT NULL,
-            input_data TEXT,
-            output_data TEXT,
-            success BOOLEAN DEFAULT 1,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute(
-        "CREATE INDEX IF NOT EXISTS idx_timestamp ON conversations(timestamp)"
-    )
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_category ON memories(category)")
-
-    conn.commit()
-    conn.close()
-
-
-def add_conversation(user_msg: str, assistant_resp: str, context: str = None):
-    """Store a conversation turn."""
-    conn = _get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO conversations (user_message, assistant_response, context) VALUES (?, ?, ?)",
-        (user_msg, assistant_resp, context),
-    )
-    conn.commit()
-    conn.close()
+        db.commit()
+    except Exception:
+        pass
+    finally:
+        db.close()
 
 
 def get_recent_conversations(limit: int = 10) -> List[dict]:
-    """Get recent conversation history."""
-    conn = _get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM conversations ORDER BY timestamp DESC LIMIT ?", (limit,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    db = _get_session()
+    if db is None:
+        return []
+    try:
+        rows = (
+            db.query(Conversation)
+            .order_by(Conversation.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "user_message": r.user_message,
+                "assistant_response": r.assistant_response,
+                "context": r.context,
+                "timestamp": str(r.created_at),
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+    finally:
+        db.close()
 
 
 def search_memories(query: str, limit: int = 5) -> List[str]:
-    """Simple keyword-based memory search."""
-    conn = _get_db()
-    cursor = conn.cursor()
-    keywords = query.lower().split()
-
-    if not keywords:
+    try:
+        query_vec = embed(query)
+    except Exception:
         return []
 
-    conditions = " OR ".join(["content LIKE ?" for _ in keywords])
-    params = [f"%{kw}%" for kw in keywords]
-
-    cursor.execute(
-        f"SELECT content FROM memories WHERE {conditions} ORDER BY importance DESC, timestamp DESC LIMIT ?",
-        params + [limit],
-    )
-    results = [row[0] for row in cursor.fetchall()]
-    conn.close()
-    return results
+    db = _get_session()
+    if db is None:
+        return []
+    try:
+        sql = text(
+            "SELECT content FROM memories "
+            "WHERE embedding IS NOT NULL "
+            "ORDER BY embedding <=> :query_vec "
+            "LIMIT :lim"
+        )
+        rows = db.execute(sql, {"query_vec": query_vec, "lim": limit}).fetchall()
+        return [row[0] for row in rows]
+    except Exception:
+        return []
+    finally:
+        db.close()
 
 
 def add_memory(content: str, category: str = "general", importance: int = 1):
-    """Store an important memory."""
-    conn = _get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO memories (content, category, importance) VALUES (?, ?, ?)",
-        (content, category, importance),
-    )
-    conn.commit()
-    conn.close()
+    try:
+        vector = embed(content)
+    except Exception:
+        vector = None
+
+    db = _get_session()
+    if db is None:
+        return
+    try:
+        db.add(
+            Memory(
+                content=content, embedding=vector, category=category, importance=importance
+            )
+        )
+        db.commit()
+    except Exception:
+        pass
+    finally:
+        db.close()
 
 
 def get_context_for_query(
     query: str, memory_limit: int = 5, history_limit: int = 5
 ) -> str:
-    """Get relevant context for a query."""
     memories = search_memories(query, memory_limit)
     history = get_recent_conversations(history_limit)
 
     context_parts = []
-
     if memories:
         context_parts.append("Relevant memories:")
         for m in memories:
             context_parts.append(f"- {m}")
-
     if history:
         context_parts.append("\nRecent conversation:")
         for h in reversed(history):
@@ -146,29 +137,55 @@ def get_context_for_query(
 
 
 def log_action(
-    action: str, input_data: str = None, output_data: str = None, success: bool = True
+    action: str,
+    input_data: Optional[str] = None,
+    output_data: Optional[str] = None,
+    success: bool = True,
 ):
-    """Log an action for future reference."""
-    conn = _get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO action_history (action, input_data, output_data, success) VALUES (?, ?, ?, ?)",
-        (action, input_data, output_data, success),
-    )
-    conn.commit()
-    conn.close()
+    from models import ActionLog
+
+    db = _get_session()
+    if db is None:
+        return
+    try:
+        db.add(
+            ActionLog(
+                action=action,
+                input_text=input_data or "",
+                output_text=output_data or "",
+                language="auto",
+            )
+        )
+        db.commit()
+    except Exception:
+        pass
+    finally:
+        db.close()
 
 
 def get_action_history(limit: int = 20) -> List[dict]:
-    """Get recent action history."""
-    conn = _get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM action_history ORDER BY timestamp DESC LIMIT ?", (limit,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    from models import ActionLog
 
-
-init_memory_db()
+    db = _get_session()
+    if db is None:
+        return []
+    try:
+        rows = (
+            db.query(ActionLog)
+            .order_by(ActionLog.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "action": r.action,
+                "input_text": r.input_text,
+                "output_text": r.output_text,
+                "timestamp": str(r.created_at),
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
+    finally:
+        db.close()
