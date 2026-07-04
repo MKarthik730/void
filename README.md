@@ -1,153 +1,76 @@
+<p align="center">
+  <img src="docs/void-wordmark.png" alt="Void" width="238">
+</p>
 
 <p align="center">
-  <img src="assets/void_logo.svg" width="280" alt="VOID" style="margin-bottom: 20px;">
+  A self-hosted AI workspace for chat, agents, research, documents, email, notes, calendar, and local model workflows.
 </p>
-# VOID — AI Screen Assistant
-> A floating AI desktop assistant that reads your screen, understands Telugu, and helps you reply, summarize, translate, and draft — powered entirely by local models.
+
+<p align="center">
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="docs/setup.md">Setup Guide</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="ROADMAP.md">Roadmap</a>
+</p>
+
+<p align="center">
+  <a href="https://repology.org/project/void-ai/versions"><img src="https://repology.org/badge/vertical-allrepos/void-ai.svg" alt="Packaging status"></a>
+</p>
+
+<p align="center">
+  <img src="docs/void-browser.jpg" alt="Void interface">
+</p>
 
 ---
 
-## Overview
+## Quick Start
 
-VOID runs as a frameless floating widget on your Windows desktop. It uses **Qwen2.5-3B** (GGUF, CPU-only) for all text tasks and **Groq Vision** for screen understanding. No cloud LLM dependency for text generation — everything runs on your machine.
+> `dev` is the default branch and gets the newest changes first. Use [`main`](https://github.com/pewdiepie-archdaemon/void/tree/main) if you want the more curated branch.
 
----
+```bash
+git clone https://github.com/pewdiepie-archdaemon/void.git
+cd void
+cp .env.example .env
+docker compose up -d --build
+```
+
+Open `http://localhost:7000` when the containers are healthy. The first admin password is printed in `docker compose logs void`.
+
+Native installs, GPU notes, Windows/macOS instructions, HTTPS, and configuration live in the [setup guide](docs/setup.md).
 
 ## Features
 
-| Action | Description |
-|---|---|
-| LangGraph Agent | Multi-step task planning and execution |
-| WhatsApp Reply | Captures chat, generates 3 Tenglish suggestions via Ollama Vision |
-| Screenshot | Saves PNG to `~/Pictures/VOID/` |
-| Voice Type | Transcribes mic via Whisper, types into active window |
-| Explain Screen | Analyzes screen with local vision model (llava/moondream) |
-| Translate | Extracts and translates on-screen text |
-| Summarize | Summarizes screen content |
-| Email Draft | Voice note to professional email |
-| Ask VOID | Persistent chat with memory across sessions |
-| Alt+Space Hotkey | Summon VOID from anywhere |
+- **Chat + Agents** — local/API models, tools, MCP, files, shell, skills, and memory.
+- **Cookbook** — hardware-aware model recommendations, downloads, and serving.
+- **Deep Research** — multi-step web research with source reading and report generation.
+- **Compare** — blind side-by-side model testing and synthesis.
+- **Documents** — writing-first editor with AI edits, suggestions, Markdown, HTML, CSV, and syntax highlighting.
+- **Email** — IMAP/SMTP inbox with triage, tags, summaries, reminders, and reply drafts.
+- **Notes, Tasks + Calendar** — reminders, todos, scheduled agent tasks, and CalDAV sync.
+- **Extras** — gallery/image editor, themes, uploads, web search, presets, sessions, and 2FA.
 
----
+## Demo
 
-## Architecture
+A full hover-to-play tour lives on the landing page: [`docs/index.html`](docs/index.html).
 
-```
-void/
-├── project/
-│   ├── backend/
-│   │   ├── main.py                  # FastAPI + LangGraph agent
-│   │   ├── config.py               # Environment configuration
-│   │   ├── agent/
-│   │   │   └── void_agent.py       # LangGraph agentic core
-│   │   └── services/
-│   │       ├── ollama_service.py   # Ollama LLM client
-│   │       ├── vision_service.py   # Local vision (llava/moondream)
-│   │       └── memory_service.py   # SQLite RAG memory
-│   └── frontend/
-│       └── void_ball.py            # PyQt6 glassmorphism UI
-```
+## Contributing
 
----
+Help is welcome. The best entry points are fresh-install testing, provider setup bugs, mobile/editor polish, docs, and small focused refactors. See [CONTRIBUTING.md](CONTRIBUTING.md) and [ROADMAP.md](ROADMAP.md).
 
-## Tech Stack
+## Security
 
-| Layer | Technology |
-|---|---|
-| Agent | LangGraph 0.0.x — multi-step planning |
-| LLM | Qwen2.5 via Ollama (local) |
-| Vision | Ollama llava or moondream (local) |
-| Memory | SQLite RAG — persistent context |
-| ASR | OpenAI Whisper tiny (local) |
-| TTS | pyttsx3 |
-| Backend | FastAPI + Pydantic |
-| Frontend | PyQt6 with glassmorphism |
+Void is a self-hosted workspace with powerful local tools. Keep auth enabled, keep private data out of Git, and do not expose raw model/service ports publicly. Deployment details are in the [setup guide](docs/setup.md#security-notes).
 
----
+## Star History
 
-## Setup
+<a href="https://www.star-history.com/?repos=pewdiepie-archdaemon%2Fvoid&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/void&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/void&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/void&type=date&legend=top-left" />
+ </picture>
+</a>
 
-### 1. Prerequisites
+## License
 
-```bash
-# Install Ollama
-winget install Ollama.Ollama
-
-# Pull models
-ollama pull qwen2.5:3b
-ollama pull llava
-```
-
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Start Ollama (in separate terminal)
-
-```bash
-ollama serve
-```
-
-### 4. Start backend
-
-```bash
-cd project/backend
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 5. Start frontend
-
-```bash
-cd project/frontend
-python void_ball.py
-```
-
----
-
-## API Endpoints
-
-| Method | Route | Description |
-|---|---|---|
-| POST | `/agent/query` | LangGraph agent (multi-step planning) |
-| POST | `/agent/simple` | Direct LLM query |
-| POST | `/vision/analyze` | Analyze screenshot |
-| POST | `/vision/explain` | Explain screen content |
-| POST | `/vision/whatsapp-suggest` | Generate WhatsApp replies |
-| POST | `/vision/save-screenshot` | Save screenshot |
-| GET | `/memory/history` | Conversation history |
-| GET | `/memory/actions` | Action history |
-| POST | `/memory/remember` | Store important fact |
-| POST | `/memory/recall` | Retrieve relevant memories |
-| GET | `/health` | Service status |
-
----
-
-## Configuration
-
-Create `project/backend/.env`:
-
-```env
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
-VISION_MODEL=llava
-SCREENSHOTS_ROOT=C:\Users\You\Pictures\VOID
-```
-
----
-
-## Dependencies
-
-- [LangGraph](https://langchain-ai.github.io/langgraph/)
-- [Ollama](https://ollama.ai)
-- [Qwen2.5](https://huggingface.co/Qwen)
-- [llava](https://llava-vl.github.io/)
-- [PyQt6](https://pypi.org/project/PyQt6/)
-- [OpenAI Whisper](https://github.com/openai/whisper)
-
----
-
-*VOID — local-first AI assistant for Telugu users.*
-```
-
+AGPL-3.0-or-later -- see [LICENSE](LICENSE) and [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).

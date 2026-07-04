@@ -1,27 +1,50 @@
-# VOID Frontend Dependencies
-PyQt6==6.7.0
-pyautogui==0.9.54
-keyboard==0.13.5
-openai-whisper
-sounddevice==0.4.6
-scipy==1.13.0
-numpy==1.26.4
-Pillow==10.3.0
-pyttsx3==2.90
-requests==2.31.0
-easyocr==1.7.1
-
-# VOID Backend Dependencies
-fastapi==0.111.0
-uvicorn[standard]==0.29.0
-pydantic==2.7.0
-sqlalchemy==2.0.30
-requests==2.31.0
-
-# LangGraph Agent
-langgraph==0.0.55
-langchain-core==0.2.0
-langchain-community==0.2.0
-
-# Ollama (runs separately)
-# ollama serve
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+httpx
+httpcore>=1.0,<2.0
+pydantic>=2.13.4
+pydantic-settings>=2.14.1
+SQLAlchemy
+pypdf
+beautifulsoup4
+charset-normalizer
+numpy
+# Vector store + local embeddings for RAG, semantic memory, and tool
+# selection. Used on core agent paths, so installed by default — the app
+# still degrades to keyword fallback if they're ever missing.
+# chromadb-client is the lightweight HTTP client (talks to a standalone
+# ChromaDB service); fastembed runs local ONNX embeddings.
+chromadb-client
+fastembed
+youtube-transcript-api
+# Markdown rendering for research reports (src/visual_report.py).
+# Imported at module-top so it's a hard core dep, not optional.
+markdown
+# HTML sanitizer for rendered research reports (src/visual_report.py). Report
+# content is untrusted (LLM output over crawled pages) and report pages run
+# under a relaxed CSP, so the rendered HTML is allowlist-sanitized.
+nh3
+# Calendar .ics import/export (routes/calendar_routes.py).
+icalendar
+# Recurrence rule expansion for calendar events (routes/calendar_routes.py).
+# Imported directly as dateutil.rrule — make it explicit even though caldav
+# pulls it in transitively.
+python-dateutil
+# CalDAV sync (src/caldav_sync.py). Handles PROPFIND discovery + REPORT
+# fetch across Radicale, Nextcloud, Apple, Fastmail; we'd be reinventing
+# the protocol without it.
+caldav
+cryptography
+bcrypt
+mcp
+pyotp
+qrcode[pil]
+croniter
+pytest
+pytest-asyncio
+# starlette.testclient prefers httpx2 since Starlette 1.2.0 and warns on every
+# TestClient import when only classic httpx is present. Runtime code keeps
+# using `httpx` above; this is test-client only.
+httpx2
