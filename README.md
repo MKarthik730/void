@@ -8,7 +8,6 @@
 
 ## VOID — AI Screen Assistant
 > A floating AI desktop assistant that reads your screen, understands Telugu, and helps you reply, summarize, translate, and draft — powered entirely by local models.
->>>>>>> 9b7b6e2ae7b9d9af350976bef48eb254093db622
 
 ---
 
