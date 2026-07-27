@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 VOID AI Assistant v3.0 — FastAPI Backend with Full Agentic Core
 Hyper-personal AI assistant for Karthik (MKarthik730)
@@ -31,6 +32,7 @@ from agent.void_agent import run_agent, run_simple
 from routers.screen_router import router as screen_router
 from routers.text_router import router as text_router
 from routers.meeting_router import router as meeting_router
+from routers.file_router import router as file_router
 
 app = FastAPI(
     title="VOID AI Assistant API",
@@ -49,6 +51,7 @@ app.add_middleware(
 app.include_router(screen_router)
 app.include_router(text_router)
 app.include_router(meeting_router)
+app.include_router(file_router)
 
 # ── Initialize ────────────────────────────────────────────────────────────────
 init_memory_db()
@@ -172,6 +175,7 @@ async def startup():
     print("  Memory: PostgreSQL + pgvector RAG")
     print("  Vision: Ollama llava/moondream")
     print("  Capabilities: 19 integrated services")
+    print("  File Workspace: " + config.FILE_WORKSPACE_ROOTS.split(";")[0])
     print("=" * 60)
     print("Starting services...")
 
@@ -211,6 +215,7 @@ def health():
             "github": True,
             "leetcode": True,
             "news": True,
+            "file_workspace": bool(config.FILE_WORKSPACE_ROOTS),
         },
     }
 
