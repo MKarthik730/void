@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from dotenv import load_dotenv
 
@@ -57,3 +58,9 @@ USER_GRADUATION = os.getenv("USER_GRADUATION", "2028")
 USER_CGPA = os.getenv("USER_CGPA", "9.0+")
 USER_TIMEZONE = os.getenv("USER_TIMEZONE", "Asia/Kolkata")
 USER_IST_OFFSET = os.getenv("USER_IST_OFFSET", "UTC+5:30")
+
+# ── File Workspace ────────────────────────────────────────────────────────────
+FILE_WORKSPACE_ROOTS = os.getenv(
+    "FILE_WORKSPACE_ROOTS",
+    os.path.join(os.path.expanduser("~"), "VOID_Projects"),
+)
