@@ -101,7 +101,6 @@ docs/windows-port/
 compound.config.json
 *.error.log
 _scratch/
-/odysseus/
 
 venv/
 __pycache__/

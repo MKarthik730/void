@@ -28,7 +28,7 @@ Built with Python/FastAPI and a dependency-free vanilla-JS frontend. The detaile
 
 ## Quick Start
 
-> `dev` is the default branch and gets the newest changes first. Use [`main`](https://github.com/pewdiepie-archdaemon/void/tree/main) if you want the more curated branch.
+> `dev` is the default branch and gets the newest changes first. Use [`main`](https://github.com/MKarthik730/void/tree/main) if you want the more curated branch.
 
 Defaults work out of the box: clone, run, then configure models, search, and email inside **Settings**. Only edit `.env` for deployment-level overrides such as `APP_BIND`, `APP_PORT`, `AUTH_ENABLED`, or `DATABASE_URL`.
 
@@ -37,7 +37,7 @@ On first setup, Void creates an admin account (`admin` unless `VOID_ADMIN_USER` 
 ### 🐳 Docker (recommended)
 
 ```bash
-git clone https://github.com/pewdiepie-archdaemon/void.git
+git clone https://github.com/MKarthik730/void.git
 cd void
 cp .env.example .env       # optional, but recommended for explicit defaults
 docker compose up -d --build
@@ -52,7 +52,7 @@ To pass an NVIDIA/AMD GPU into the container for Cookbook model serving, follow 
 One command — creates a venv, installs dependencies, runs first-time setup, and starts the server. Safe to re-run:
 
 ```powershell
-git clone https://github.com/pewdiepie-archdaemon/void.git
+git clone https://github.com/MKarthik730/void.git
 cd void
 powershell -ExecutionPolicy Bypass -File .\launch-windows.ps1
 ```
@@ -62,7 +62,7 @@ Requires Python 3.11+. The core app (chat, agents, memory, documents, email, cal
 ### 🍎 macOS (native, Apple Silicon)
 
 ```bash
-git clone https://github.com/pewdiepie-archdaemon/void.git
+git clone https://github.com/MKarthik730/void.git
 cd void
 ./start-macos.sh
 ```
@@ -72,7 +72,7 @@ Installs Homebrew dependencies (Python, tmux, llama.cpp), creates the venv, and 
 ### 🐧 Native Linux
 
 ```bash
-git clone https://github.com/pewdiepie-archdaemon/void.git
+git clone https://github.com/MKarthik730/void.git
 cd void
 python3 -m venv venv
 source venv/bin/activate
@@ -124,11 +124,11 @@ Void is a self-hosted workspace with powerful local tools: shell access, file up
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=pewdiepie-archdaemon%2Fvoid&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=MKarthik730%2Fvoid&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=pewdiepie-archdaemon/void&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=pewdiepie-archdaemon/void&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=pewdiepie-archdaemon/void&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=MKarthik730/void&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=MKarthik730/void&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=MKarthik730/void&type=Date" />
  </picture>
 </a>
 
