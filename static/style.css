@@ -16,12 +16,19 @@
  */
 
 :root {
-  /* Core palette */
-  --bg: #282c34;
-  --fg: #9cdef2;
-  --panel: #111;
-  --border: #355a66;
-  --red: #e06c75;
+  /* Core palette — 3-tier surface system:
+     --bg    page background (darkest)
+     --panel cards / panels (one step up)
+     --raised  raised elements (lightest tier: input bar, modals, hover)
+     Accent coral #E0553A is reserved for primary actions only
+     (send button, active nav, logo). Everything else is neutral
+     gray/white text on dark surfaces. */
+  --bg: #101014;
+  --fg: #e9e9ee;
+  --panel: #17171d;
+  --raised: #1e1e26;
+  --border: #2a2a33;
+  --red: #e0553a;
   /* Were `var(--green)` / `var(--warn)` — self-referential, so they
      resolved to invalid and every site fell back to its own literal
      (or, for sites with no fallback, painted as transparent/inherit).
@@ -49,15 +56,15 @@
   --color-danger: #c0392b;
   --color-recording: #ff3b30;
   --color-recording-hover: #d63031;
-  --color-muted: #888;
-  --color-muted-alt: #6b7280;
-  --color-accent: #00aaff;
+  --color-muted: #9a9aa5;
+  --color-muted-alt: #767681;
+  --color-accent: #e0553a;
   --color-agent-active: #00ff00;
   --color-brand-blue: #3b82f6;
   --color-blind-orange: #ff9800;
   --color-save-green: var(--color-success);
-  --color-link-hover: #66c7ff;
-  --color-subheader: #6b8a94;
+  --color-link-hover: #ff7a5c;
+  --color-subheader: #8a8a96;
   --select-bg: var(--bg);
   --select-fg: var(--fg);
   --select-option-bg: color-mix(in srgb, var(--panel) 74%, var(--bg));
@@ -66,13 +73,18 @@
   /* Warm accent — used by the Goals/Today UI in Notes. Lives as a token so
      themes can override without touching the goal CSS. */
   --accent-warm: #d19a66;
+  /* Typography: Inter (self-hosted) for UI chrome + body text; monospace
+     (Fira Code) reserved for code, commands and model/version names. */
+  --font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Fira Code', 'Courier New', monospace;
 }
 
 :root.light {
-  --bg: #f5f5f5;
-  --fg: #2b2b2b;
+  --bg: #f4f4f6;
+  --fg: #2c2c31;
   --panel: #fff;
-  --border: #bbb;
+  --raised: #fafafc;
+  --border: #d8d8de;
   --hl-bg: #f9f9f9;
   --hl-fg: #2b2b2b;
   --hl-keyword: #7928a1;
@@ -102,7 +114,7 @@ body {
      below so left + right docks can coexist without skewing the whole body. */
   transition: padding-left 160ms cubic-bezier(0.22, 0.61, 0.36, 1),
               padding-right 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  font-family: var(--font-family, 'Fira Code', monospace);
+  font-family: var(--font-family, 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif);
   display: flex;
   height: 100%;
   height: 100dvh; /* dynamic viewport height — adapts when mobile keyboard opens */
@@ -39705,3 +39717,209 @@ body.theme-frosted .modal {
   .compare-grid[data-cols] { grid-template-columns: 1fr !important; overflow-y: auto; }
   .compare-pane { min-height: 60dvh; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   2026 UI refresh — 3-tier surfaces, coral accent, Inter type
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Raised surface tier (--raised) ─────────────────────────────── */
+/* 3-tier system: page (--bg) darkest · cards/panels (--panel) one up
+   · raised elements (--raised) lightest. The input bar + modals sit on
+   the raised tier; the sidebar and message bubbles stay on --panel. */
+.chat-input-bar,
+.modal-content { background: var(--input-bg, var(--raised, var(--panel))); }
+.chat-input-bar { border-radius: 14px; }
+
+/* ── Folder picker chip above the input bar ────────────────────── */
+.chat-input-folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 2px;
+}
+.folder-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-family, 'Inter', sans-serif);
+  color: color-mix(in srgb, var(--fg) 72%, transparent);
+  background: var(--raised, var(--panel));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.folder-pick-btn:hover {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--fg) 35%, var(--border));
+}
+.folder-pick-btn.has-folder {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--red) 45%, var(--border));
+}
+.folder-pick-btn.has-folder .folder-pick-icon { color: var(--red); }
+.folder-pick-label {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.folder-pick-caret { opacity: 0.5; }
+.folder-pick-hint {
+  font-size: 10px;
+  color: color-mix(in srgb, var(--fg) 35%, transparent);
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 480px) { .folder-pick-hint { display: none; } }
+
+/* ── Sidebar group labels (Workspace / Tools / Explore) ─────────── */
+.sidebar-group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 8px 4px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--fg) 42%, transparent);
+  user-select: none;
+  white-space: nowrap;
+}
+.sidebar-group-label:first-child { margin-top: 4px; }
+.sidebar-group-icon { opacity: 0.55; flex-shrink: 0; }
+/* subtle divider under each group label */
+.sidebar-group-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  margin-left: 4px;
+  background: color-mix(in srgb, var(--border) 60%, transparent);
+}
+#explore-section .list-item { padding: 8px 8px; }
+
+/* ── Brand mark (angle brackets + coral dot) ────────────────────── */
+.sidebar-header {
+  justify-content: flex-start;
+  padding-left: 40px;
+}
+.sidebar.right-side .sidebar-header {
+  justify-content: flex-start;
+  padding-left: 10px;
+  padding-right: 40px;
+}
+.sidebar-brand {
+  gap: 6px;
+  justify-content: flex-start;
+}
+.sidebar-brand-mark {
+  color: var(--brand-color, var(--red));
+  flex-shrink: 0;
+}
+.sidebar-brand-title {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--brand-color, var(--red));
+  left: 0;
+  margin-left: 2px;
+}
+
+/* ── Connected input-bar cluster ────────────────────────────────── */
+/* Model picker reads as a chip attached to the textarea row */
+.model-picker-btn {
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--raised, var(--panel));
+}
+/* Right cluster: Agent/Chat toggle + send share one bordered pill */
+.chat-input-right {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 2px;
+  background: var(--raised, var(--panel));
+}
+.chat-input-right .mode-toggle {
+  border: none;
+  border-radius: 9px;
+  height: 28px;
+}
+@media (min-width: 769px) and (pointer: coarse) {
+  .chat-input-right .mode-toggle { height: 34px; }
+}
+.chat-input-right .send-btn {
+  border-radius: 9px;
+  height: 28px !important;
+  min-width: 28px;
+}
+.chat-input-right .send-btn.newchat-expanded {
+  width: 68px;
+  padding: 0 10px 0 8px;
+}
+
+/* ── Top bar session context ────────────────────────────────────── */
+.chat-top-bar {
+  min-height: 30px;
+  padding: 7px 0 3px;
+}
+.chat-meta-overlay {
+  gap: 6px;
+  font-size: 0.72em;
+  letter-spacing: 0.01em;
+}
+.chat-meta-count { margin-left: 0; }
+.chat-meta-count:not(:empty)::before { content: '·'; margin-right: 6px; opacity: 0.5; }
+.session-cost-display:not(:empty)::before { content: '·'; margin-right: 6px; opacity: 0.5; }
+
+/* ── System / status message hierarchy ──────────────────────────── */
+/* Slash-command output (source=slash) renders as a system chip. */
+.msg-system {
+  width: fit-content;
+  max-width: 88%;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
+  padding: 6px 14px !important;
+  text-align: center;
+}
+.msg-system .role {
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--fg) 45%, transparent);
+  margin-bottom: 2px;
+}
+.msg-system .role::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+}
+.msg-system .body {
+  font-size: 0.82em;
+  color: color-mix(in srgb, var(--fg) 75%, transparent);
+}
+/* System-message headings vs body bullets */
+.msg-system .body h1,
+.msg-system .body h2,
+.msg-system .body h3 { font-size: 0.95em; margin: 2px 0 4px; }
+.msg-system .body ul,
+.msg-system .body ol { margin: 2px 0; padding-left: 16px; text-align: left; }
+
+/* ── Welcome screen polish ──────────────────────────────────────── */
+.welcome-boat { color: var(--brand-color, var(--red)); }

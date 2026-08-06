@@ -48,6 +48,17 @@ export function syncWorkspaceIndicator(path) {
     overflow.style.display = chat ? 'none' : '';
     overflow.classList.toggle('active', !!path);
   }
+  // Prominent folder picker above the input bar — always visible so the
+  // agent's working folder is obvious. Shows the basename once set.
+  const pickBtn = document.getElementById('folder-pick-btn');
+  const pickName = document.getElementById('folder-pick-name');
+  if (pickBtn) {
+    pickBtn.title = path
+      ? `Working folder: ${path}\nClick to change where the agent edits files.`
+      : 'Choose the folder the agent edits files in';
+    pickBtn.classList.toggle('has-folder', !!path);
+  }
+  if (pickName) pickName.textContent = path ? _basename(path) : 'Folder';
   // Recompute the "+" overflow dot (app.js owns updatePlusDot via this event).
   try { document.dispatchEvent(new CustomEvent('overflow-state-change')); } catch (_) {}
 }
@@ -203,6 +214,9 @@ export function initWorkspace() {
   if (overflow) overflow.addEventListener('click', openWorkspaceBrowser);
   const pill = document.getElementById('workspace-indicator-btn');
   if (pill) pill.addEventListener('click', clearWorkspace);
+  // Prominent folder picker above the input bar opens the same browser.
+  const pickBtn = document.getElementById('folder-pick-btn');
+  if (pickBtn) pickBtn.addEventListener('click', openWorkspaceBrowser);
 }
 
 export default { initWorkspace, openWorkspaceBrowser, getWorkspace, setWorkspace, vetAndSetWorkspace, clearWorkspace, syncWorkspaceIndicator, applyMode };

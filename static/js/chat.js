@@ -350,7 +350,7 @@ import { wireArrowUpRecall, getLastUserMessageFromChatHistory } from './composer
         setTimeout(window._updateSendBtnIcon, 50);
       } else {
         var icons = window._voidBtnIcons;
-        submitBtn.innerHTML = icons ? icons.send : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+        submitBtn.innerHTML = icons ? icons.send : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9z"/></svg>';
         submitBtn.title = 'Send message';
         submitBtn.classList.remove('mic-mode', 'newchat-mode');
       }

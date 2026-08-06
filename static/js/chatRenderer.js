@@ -2390,6 +2390,10 @@ export function addMessage(role, content, modelName, metadata) {
     r.className = 'role';
     const isSlash = metadata?.source === 'slash';
     const isCompacted = metadata?.compacted;
+    // System/status messages (slash output) render as a centered chip with a
+    // distinct label + icon (see .msg-system in CSS). Compacted summaries are
+    // full assistant content — keep them as normal bubbles.
+    if (isSlash) wrap.classList.add('msg-system');
     const replyModels = replyModelPair(modelName, metadata);
     const resolvedModel = replyModels.actualModel || replyModels.requestedModel;
     var _roleText = role === 'user' ? 'You' : (isSlash || isCompacted) ? 'Void' : modelRouteLabel(replyModels.requestedModel, resolvedModel);

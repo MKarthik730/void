@@ -9,7 +9,7 @@ import { makeWindowDraggable } from './windowDrag.js';
 import { snapModalToZone } from './tileManager.js';
 
 export const THEMES = {
-  dark:       { bg:'#282c34', fg:'#9cdef2', panel:'#111111', border:'#355a66', red:'#e06c75' },
+  dark:       { bg:'#101014', fg:'#e9e9ee', panel:'#17171d', border:'#2a2a33', red:'#e0553a' },
   light:      { bg:'#f0ebe3', fg:'#5a5248', panel:'#faf6f0', border:'#d4cdc2', red:'#c47d5a' },
   midnight:   { bg:'#0d1117', fg:'#c9d1d9', panel:'#161b22', border:'#30363d', red:'#f85149' },
   paper:      { bg:'#faf8f5', fg:'#3b3836', panel:'#ffffff', border:'#d5d0c8', red:'#c5ac4a' },
@@ -37,7 +37,7 @@ const CUSTOM_THEMES_KEY = 'void-custom-themes';
 
 const FONT_MAP = {
   mono: "'Fira Code', monospace",
-  sans: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  sans: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
   serif: "Georgia, 'Times New Roman', serif",
   opendyslexic: "'OpenDyslexic', sans-serif",
 };
@@ -288,7 +288,7 @@ export function applyColors(colors) {
   }
 
   // Update favicon to match theme accent color
-  _updateFavicon(colors.red || '#e06c75');
+  _updateFavicon(colors.red || '#e0553a');
 }
 
 // Per-route SVG shape registry — kept in sync with the inline favicon
@@ -336,7 +336,7 @@ function _updateFavicon(fg) {
   if (routeShape) {
     svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>${routeShape.split('__C__').join(fg)}</svg>`;
   } else {
-    svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 4L16 22L6 22Z' fill='${fg}'/><path d='M16 8L16 22L24 22Z' fill='${fg}' opacity='0.6'/><path d='M4 24Q10 20 16 24Q22 28 28 24' stroke='${fg}' stroke-width='2.5' fill='none' stroke-linecap='round'/></svg>`;
+    svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M9 8L4 16L9 24' stroke='${fg}' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='16' cy='16' r='3.2' fill='${fg}'/><path d='M23 8L28 16L23 24' stroke='${fg}' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
   }
   const href = 'data:image/svg+xml,' + encodeURIComponent(svg);
   let link = document.querySelector("link[rel='icon']");
