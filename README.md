@@ -14,9 +14,6 @@
   <a href="ROADMAP.md">Roadmap</a>
 </p>
 
-<p align="center">
-  <a href="https://repology.org/project/void-ai/versions"><img src="https://repology.org/badge/vertical-allrepos/void-ai.svg" alt="Packaging status"></a>
-</p>
 
 ---
 
