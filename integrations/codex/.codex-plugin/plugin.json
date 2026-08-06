@@ -1,0 +1,22 @@
+{
+  "name": "void",
+  "version": "0.1.1",
+  "description": "Connect Codex to a scoped Void instance.",
+  "author": {
+    "name": "Void"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Void",
+    "shortDescription": "Use scoped Void tools from Codex.",
+    "longDescription": "Connects Codex terminal sessions to Void through user-controlled scoped API tokens. Codex must use /api/codex/* endpoints so Void Settings can enforce tool access.",
+    "developerName": "Void",
+    "category": "Productivity",
+    "capabilities": [
+      "todos",
+      "email",
+      "scoped-api"
+    ],
+    "defaultPrompt": "Use Void only through configured scoped access. Check capabilities before reading or writing data."
+  }
+}
