@@ -1,0 +1,540 @@
+diff --git a/project/backend/config.py b/project/backend/config.py
+index b8739cd..7991210 100644
+--- a/project/backend/config.py
++++ b/project/backend/config.py
+@@ -1,32 +1,16 @@
+-"""
+-VOID Backend — Central Configuration
+-Loads all settings from .env file
+-"""
+-
+ import os
+ from dotenv import load_dotenv
+ 
+ load_dotenv()
+ 
+-HF_HOME = os.getenv("HF_HOME", "D:\\huggingface")
+-HF_HUB_CACHE = os.getenv("HUGGINGFACE_HUB_CACHE", "D:\\huggingface\\hub")
+-os.environ["HF_HOME"] = HF_HOME
+-os.environ["HUGGINGFACE_HUB_CACHE"] = HF_HUB_CACHE
+-
+ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+ VISION_MODEL = os.getenv("VISION_MODEL", "llava")
+-
+-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+-
+-SCREENSHOTS_ROOT = os.path.join(os.path.expanduser("~"), "Pictures", "VOID")
++EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")
+ 
+ DATABASE_URL = os.getenv(
+     "DATABASE_URL",
+-    f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'void_memory.db')}",
++    "postgresql://postgres:postgres@localhost:5432/void",
+ )
+ 
+-DATABASE_URL = os.getenv(
+-    "DATABASE_URL",
+-    f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'void_memory.db')}",
+-)
++SCREENSHOTS_ROOT = os.path.join(os.path.expanduser("~"), "Pictures", "VOID")
+diff --git a/project/backend/database.py b/project/backend/database.py
+index d7a502b..fd4b218 100644
+--- a/project/backend/database.py
++++ b/project/backend/database.py
+@@ -1,12 +1,13 @@
+-"""
+-VOID Backend — SQLite Database Connection
+-"""
+-
+-from sqlalchemy import create_engine
++from sqlalchemy import create_engine, event, text
+ from sqlalchemy.orm import declarative_base, sessionmaker
+ from config import DATABASE_URL
+ 
+-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
++engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=5, max_overflow=10)
++
++with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
++    conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
++
++
+ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+ Base = declarative_base()
+ 
+@@ -17,3 +18,7 @@ def get_db():
+         yield db
+     finally:
+         db.close()
++
++
++def init_db():
++    Base.metadata.create_all(bind=engine)
+diff --git a/project/backend/main.py b/project/backend/main.py
+index 3b7f977..de72341 100644
+--- a/project/backend/main.py
++++ b/project/backend/main.py
+@@ -89,7 +89,7 @@ def health():
+         "version": "3.0.0",
+         "agent": "LangGraph + Ollama Qwen3",
+         "vision": "Ollama llava/moondream",
+-        "memory": "SQLite RAG",
++        "memory": "PostgreSQL + pgvector RAG",
+     }
+ 
+ 
+diff --git a/project/backend/models.py b/project/backend/models.py
+index 4ff3ecb..d092b68 100644
+--- a/project/backend/models.py
++++ b/project/backend/models.py
+@@ -1,53 +1,67 @@
+-"""
+-VOID Backend — SQLAlchemy Database Models
+-Tables: action_logs, screenshots, voice_logs, meeting_logs
+-"""
+ from sqlalchemy import Column, Integer, String, Text, DateTime
+ from sqlalchemy.sql import func
+ from database import Base
++from pgvector.sqlalchemy import Vector
+ 
+ 
+ class ActionLog(Base):
+-    """Logs every VOID action (suggest, summarize, explain, translate, autotype)"""
+     __tablename__ = "action_logs"
+ 
+-    id          = Column(Integer, primary_key=True, index=True)
+-    action      = Column(String(50),  nullable=False)
+-    input_text  = Column(Text,        nullable=True)
+-    output_text = Column(Text,        nullable=True)
+-    language    = Column(String(20),  default="auto")
+-    created_at  = Column(DateTime(timezone=True), server_default=func.now())
++    id = Column(Integer, primary_key=True, index=True)
++    action = Column(String(50), nullable=False)
++    input_text = Column(Text, nullable=True)
++    output_text = Column(Text, nullable=True)
++    language = Column(String(20), default="auto")
++    created_at = Column(DateTime(timezone=True), server_default=func.now())
+ 
+ 
+ class Screenshot(Base):
+-    """Stores metadata for every saved screenshot"""
+     __tablename__ = "screenshots"
+ 
+-    id         = Column(Integer, primary_key=True, index=True)
+-    filepath   = Column(Text,        nullable=False)
+-    folder     = Column(String(255), nullable=True)
+-    context    = Column(String(100), nullable=True)   # whatsapp | pdf | browser | etc
++    id = Column(Integer, primary_key=True, index=True)
++    filepath = Column(Text, nullable=False)
++    folder = Column(String(255), nullable=True)
++    context = Column(String(100), nullable=True)
+     created_at = Column(DateTime(timezone=True), server_default=func.now())
+ 
+ 
+ class VoiceLog(Base):
+-    """Logs every voice input transcription"""
+     __tablename__ = "voice_logs"
+ 
+-    id            = Column(Integer, primary_key=True, index=True)
+-    transcription = Column(Text,       nullable=True)
+-    language      = Column(String(20), default="auto")
+-    action_taken  = Column(String(50), nullable=True)  # what was done with this voice input
+-    created_at    = Column(DateTime(timezone=True), server_default=func.now())
++    id = Column(Integer, primary_key=True, index=True)
++    transcription = Column(Text, nullable=True)
++    language = Column(String(20), default="auto")
++    action_taken = Column(String(50), nullable=True)
++    created_at = Column(DateTime(timezone=True), server_default=func.now())
+ 
+ 
+ class MeetingLog(Base):
+-    """Stores meeting transcriptions and summaries"""
+     __tablename__ = "meeting_logs"
+ 
+-    id            = Column(Integer, primary_key=True, index=True)
++    id = Column(Integer, primary_key=True, index=True)
+     transcription = Column(Text, nullable=True)
+-    summary       = Column(Text, nullable=True)
+-    action_items  = Column(Text, nullable=True)   # extracted action items
++    summary = Column(Text, nullable=True)
++    action_items = Column(Text, nullable=True)
+     duration_secs = Column(Integer, default=0)
+-    created_at    = Column(DateTime(timezone=True), server_default=func.now())
++    created_at = Column(DateTime(timezone=True), server_default=func.now())
++
++
++class Conversation(Base):
++    __tablename__ = "conversations"
++
++    id = Column(Integer, primary_key=True, index=True)
++    user_message = Column(Text, nullable=False)
++    assistant_response = Column(Text, nullable=False)
++    context = Column(Text, nullable=True)
++    created_at = Column(DateTime(timezone=True), server_default=func.now())
++
++
++class Memory(Base):
++    __tablename__ = "memories"
++
++    id = Column(Integer, primary_key=True, index=True)
++    content = Column(Text, nullable=False)
++    embedding = Column(Vector(768), nullable=True)
++    category = Column(String(50), default="general")
++    importance = Column(Integer, default=1)
++    created_at = Column(DateTime(timezone=True), server_default=func.now())
+diff --git a/project/backend/requirements.txt b/project/backend/requirements.txt
+index 9db3d4e..1ddd407 100644
+--- a/project/backend/requirements.txt
++++ b/project/backend/requirements.txt
+@@ -1,6 +1,8 @@
+ fastapi
+ uvicorn
+ sqlalchemy
++psycopg2-binary
++pgvector
+ python-dotenv
+ pydantic
+ Pillow
+diff --git a/project/backend/routers/meeting_router.py b/project/backend/routers/meeting_router.py
+index 6a6ea01..446f770 100644
+--- a/project/backend/routers/meeting_router.py
++++ b/project/backend/routers/meeting_router.py
+@@ -34,7 +34,7 @@ def summarize_meeting(req: MeetingRequest, db: Session = Depends(get_db)):
+         "2. A list of action items with owners if mentioned\n\n"
+         f"Transcription:\n{req.transcription}"
+     )
+-    result = ollama_service.run(summary_instruction, max_new_tokens=400)
++    result = ollama_service.run(summary_instruction, max_tokens=400)
+ 
+     lines = result.split("\n")
+     summary = result
+diff --git a/project/backend/routers/text_router.py b/project/backend/routers/text_router.py
+index 1501bc9..9229779 100644
+--- a/project/backend/routers/text_router.py
++++ b/project/backend/routers/text_router.py
+@@ -42,7 +42,7 @@ def suggest(req: TextRequest, db: Session = Depends(get_db)):
+         "Keep it natural and conversational.\n\n"
+         f"Conversation:\n{req.text}"
+     )
+-    result = ollama_service.run(instruction, max_new_tokens=150)
++    result = ollama_service.run(instruction, max_tokens=150)
+ 
+     log = models.ActionLog(
+         action="suggest",
+@@ -66,7 +66,7 @@ def summarize(req: TextRequest, db: Session = Depends(get_db)):
+         "Capture only the most important information.\n\n"
+         f"Content:\n{req.text}"
+     )
+-    result = ollama_service.run(instruction, max_new_tokens=200)
++    result = ollama_service.run(instruction, max_tokens=200)
+ 
+     log = models.ActionLog(
+         action="summarize",
+@@ -90,7 +90,7 @@ def translate(req: TranslateRequest, db: Session = Depends(get_db)):
+     else:
+         instruction = f"Translate the following Telugu text to English:\n\n{req.text}"
+ 
+-    result = ollama_service.run(instruction, max_new_tokens=300)
++    result = ollama_service.run(instruction, max_tokens=300)
+ 
+     log = models.ActionLog(
+         action="translate",
+diff --git a/project/backend/services/embedding_service.py b/project/backend/services/embedding_service.py
+new file mode 100644
+index 0000000..8b0b2b6
+--- /dev/null
++++ b/project/backend/services/embedding_service.py
+@@ -0,0 +1,12 @@
++import requests
++from config import OLLAMA_HOST, EMBED_MODEL
++
++
++def embed(text: str) -> list[float]:
++    response = requests.post(
++        f"{OLLAMA_HOST}/api/embeddings",
++        json={"model": EMBED_MODEL, "prompt": text},
++        timeout=30,
++    )
++    response.raise_for_status()
++    return response.json()["embedding"]
+diff --git a/project/backend/services/memory_service.py b/project/backend/services/memory_service.py
+index bdbd652..53326f6 100644
+--- a/project/backend/services/memory_service.py
++++ b/project/backend/services/memory_service.py
+@@ -1,141 +1,92 @@
+-"""
+-VOID Backend — Memory Service (RAG with SQLite)
+-Persistent memory across sessions
+-"""
++from typing import List, Optional
++from sqlalchemy import text
++from database import SessionLocal, init_db
++from models import Conversation, Memory
++from services.embedding_service import embed
+ 
+-import sqlite3
+-import json
+-import hashlib
+-from datetime import datetime
+-from typing import List, Optional, Tuple
+-import os
+-
+-MEMORY_DB = os.path.join(os.path.dirname(__file__), "..", "..", "void_memory.db")
+-
+-
+-def _get_db():
+-    conn = sqlite3.connect(MEMORY_DB, check_same_thread=False)
+-    conn.row_factory = sqlite3.Row
+-    return conn
++init_db()
+ 
+ 
+ def init_memory_db():
+-    """Initialize memory database tables."""
+-    conn = _get_db()
+-    cursor = conn.cursor()
+-
+-    cursor.execute("""
+-        CREATE TABLE IF NOT EXISTS conversations (
+-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+-            user_message TEXT NOT NULL,
+-            assistant_response TEXT NOT NULL,
+-            context TEXT,
+-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+-        )
+-    """)
+-
+-    cursor.execute("""
+-        CREATE TABLE IF NOT EXISTS memories (
+-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+-            content TEXT NOT NULL,
+-            embedding BLOB,
+-            category TEXT DEFAULT 'general',
+-            importance INTEGER DEFAULT 1,
+-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+-        )
+-    """)
+-
+-    cursor.execute("""
+-        CREATE TABLE IF NOT EXISTS action_history (
+-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+-            action TEXT NOT NULL,
+-            input_data TEXT,
+-            output_data TEXT,
+-            success BOOLEAN DEFAULT 1,
+-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+-        )
+-    """)
+-
+-    cursor.execute(
+-        "CREATE INDEX IF NOT EXISTS idx_timestamp ON conversations(timestamp)"
+-    )
+-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_category ON memories(category)")
++    pass
+ 
+-    conn.commit()
+-    conn.close()
+ 
+-
+-def add_conversation(user_msg: str, assistant_resp: str, context: str = None):
+-    """Store a conversation turn."""
+-    conn = _get_db()
+-    cursor = conn.cursor()
+-    cursor.execute(
+-        "INSERT INTO conversations (user_message, assistant_response, context) VALUES (?, ?, ?)",
+-        (user_msg, assistant_resp, context),
++def add_conversation(user_msg: str, assistant_resp: str, context: Optional[str] = None):
++    db = SessionLocal()
++    db.add(
++        Conversation(
++            user_message=user_msg, assistant_response=assistant_resp, context=context
++        )
+     )
+-    conn.commit()
+-    conn.close()
++    db.commit()
++    db.close()
+ 
+ 
+ def get_recent_conversations(limit: int = 10) -> List[dict]:
+-    """Get recent conversation history."""
+-    conn = _get_db()
+-    cursor = conn.cursor()
+-    cursor.execute(
+-        "SELECT * FROM conversations ORDER BY timestamp DESC LIMIT ?", (limit,)
++    db = SessionLocal()
++    rows = (
++        db.query(Conversation)
++        .order_by(Conversation.created_at.desc())
++        .limit(limit)
++        .all()
+     )
+-    rows = cursor.fetchall()
+-    conn.close()
+-    return [dict(row) for row in rows]
++    db.close()
++    return [
++        {
++            "user_message": r.user_message,
++            "assistant_response": r.assistant_response,
++            "context": r.context,
++            "timestamp": str(r.created_at),
++        }
++        for r in rows
++    ]
+ 
+ 
+ def search_memories(query: str, limit: int = 5) -> List[str]:
+-    """Simple keyword-based memory search."""
+-    conn = _get_db()
+-    cursor = conn.cursor()
+-    keywords = query.lower().split()
+-
+-    if not keywords:
++    try:
++        query_vec = embed(query)
++    except Exception:
+         return []
+-
+-    conditions = " OR ".join(["content LIKE ?" for _ in keywords])
+-    params = [f"%{kw}%" for kw in keywords]
+-
+-    cursor.execute(
+-        f"SELECT content FROM memories WHERE {conditions} ORDER BY importance DESC, timestamp DESC LIMIT ?",
+-        params + [limit],
++    db = SessionLocal()
++    sql = text(
++        "SELECT content FROM memories "
++        "WHERE embedding IS NOT NULL "
++        "ORDER BY embedding <=> :query_vec "
++        "LIMIT :lim"
+     )
+-    results = [row[0] for row in cursor.fetchall()]
+-    conn.close()
+-    return results
++    try:
++        rows = db.execute(sql, {"query_vec": query_vec, "lim": limit}).fetchall()
++        return [row[0] for row in rows]
++    finally:
++        db.close()
+ 
+ 
+ def add_memory(content: str, category: str = "general", importance: int = 1):
+-    """Store an important memory."""
+-    conn = _get_db()
+-    cursor = conn.cursor()
+-    cursor.execute(
+-        "INSERT INTO memories (content, category, importance) VALUES (?, ?, ?)",
+-        (content, category, importance),
++    try:
++        vector = embed(content)
++    except Exception:
++        vector = None
++    db = SessionLocal()
++    db.add(
++        Memory(
++            content=content, embedding=vector, category=category, importance=importance
++        )
+     )
+-    conn.commit()
+-    conn.close()
++    db.commit()
++    db.close()
+ 
+ 
+ def get_context_for_query(
+     query: str, memory_limit: int = 5, history_limit: int = 5
+ ) -> str:
+-    """Get relevant context for a query."""
+     memories = search_memories(query, memory_limit)
+     history = get_recent_conversations(history_limit)
+ 
+     context_parts = []
+-
+     if memories:
+         context_parts.append("Relevant memories:")
+         for m in memories:
+             context_parts.append(f"- {m}")
+-
+     if history:
+         context_parts.append("\nRecent conversation:")
+         for h in reversed(history):
+@@ -146,29 +97,38 @@ def get_context_for_query(
+ 
+ 
+ def log_action(
+-    action: str, input_data: str = None, output_data: str = None, success: bool = True
++    action: str,
++    input_data: Optional[str] = None,
++    output_data: Optional[str] = None,
++    success: bool = True,
+ ):
+-    """Log an action for future reference."""
+-    conn = _get_db()
+-    cursor = conn.cursor()
+-    cursor.execute(
+-        "INSERT INTO action_history (action, input_data, output_data, success) VALUES (?, ?, ?, ?)",
+-        (action, input_data, output_data, success),
++    from models import ActionLog
++
++    db = SessionLocal()
++    db.add(
++        ActionLog(
++            action=action,
++            input_text=input_data or "",
++            output_text=output_data or "",
++            language="auto",
++        )
+     )
+-    conn.commit()
+-    conn.close()
++    db.commit()
++    db.close()
+ 
+ 
+ def get_action_history(limit: int = 20) -> List[dict]:
+-    """Get recent action history."""
+-    conn = _get_db()
+-    cursor = conn.cursor()
+-    cursor.execute(
+-        "SELECT * FROM action_history ORDER BY timestamp DESC LIMIT ?", (limit,)
+-    )
+-    rows = cursor.fetchall()
+-    conn.close()
+-    return [dict(row) for row in rows]
+-
+-
+-init_memory_db()
++    from models import ActionLog
++
++    db = SessionLocal()
++    rows = db.query(ActionLog).order_by(ActionLog.created_at.desc()).limit(limit).all()
++    db.close()
++    return [
++        {
++            "action": r.action,
++            "input_text": r.input_text,
++            "output_text": r.output_text,
++            "timestamp": str(r.created_at),
++        }
++        for r in rows
++    ]
+=== NEW FILES ===
+diff --git a/project/backend/services/embedding_service.py b/project/backend/services/embedding_service.py
+new file mode 100644
+index 0000000..8b0b2b6
+--- /dev/null
++++ b/project/backend/services/embedding_service.py
+@@ -0,0 +1,12 @@
++import requests
++from config import OLLAMA_HOST, EMBED_MODEL
++
++
++def embed(text: str) -> list[float]:
++    response = requests.post(
++        f"{OLLAMA_HOST}/api/embeddings",
++        json={"model": EMBED_MODEL, "prompt": text},
++        timeout=30,
++    )
++    response.raise_for_status()
++    return response.json()["embedding"]
