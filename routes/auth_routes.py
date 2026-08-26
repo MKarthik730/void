@@ -128,10 +128,17 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
             raise HTTPException(400, "Username is required")
         if body.username.lower() in RESERVED_USERNAMES:
             raise HTTPException(403, "Username is reserved")
-        ok = await asyncio.to_thread(auth_manager.create_user, body.username, body.password, is_admin=False)
+        # First user without admin gets admin privileges automatically.
+        # Uses _ensure_admin_exists style check: if no current admin exists,
+        # the new signup becomes admin.
+        has_admin = any(
+            u.get("is_admin") for u in auth_manager.users.values()
+        ) if auth_manager.users else False
+        promote = not has_admin
+        ok = await asyncio.to_thread(auth_manager.create_user, body.username, body.password, is_admin=promote)
         if not ok:
             raise HTTPException(409, "Username already taken")
-        return {"ok": True, "message": "Account created"}
+        return {"ok": True, "message": "Account created", "is_admin": promote}
 
     @router.post("/login")
     async def login(body: LoginRequest, request: Request, response: Response):

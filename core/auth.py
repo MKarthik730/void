@@ -112,7 +112,11 @@ class AuthManager:
         # Guards the first-run setup check-and-write so concurrent requests
         # cannot both observe is_configured==False and both create admin accounts.
         self._setup_lock = threading.Lock()
+        # Enable open signup by default so new users can register without
+        # admin intervention. Only admins can disable it later.
         self._load()
+        self._enable_signup_default()
+        self._ensure_admin_exists()
         self._load_sessions()
         self._migrate_single_user()
         self._drop_reserved_loaded_users()
@@ -139,6 +143,30 @@ class AuthManager:
         except Exception as e:
             logger.error(f"Failed to load auth config: {e}")
             self._config = {}
+
+    def _enable_signup_default(self):
+        """Enable open signup by default for existing installations."""
+        if self._config.get("signup_enabled") is False:
+            with self._config_lock:
+                self._config["signup_enabled"] = True
+                self._save()
+            logger.info("Enabled open signup by default")
+
+    def _ensure_admin_exists(self):
+        """Promote the first user to admin if no admin exists yet."""
+        users = self._config.get("users", {})
+        if not users:
+            return
+        has_admin = any(u.get("is_admin") for u in users.values())
+        if has_admin:
+            return
+        # No admin — promote the first user (by created timestamp)
+        first_user = min(users.keys(), key=lambda u: users[u].get("created", 0))
+        with self._config_lock:
+            self._config["users"][first_user]["is_admin"] = True
+            self._config["users"][first_user]["privileges"] = dict(ADMIN_PRIVILEGES)
+            self._save()
+        logger.info("Promoted '%s' to admin (no admin existed)", first_user)
 
     def _load_sessions(self):
         """Load persisted session tokens from disk, pruning expired ones."""
@@ -234,7 +262,7 @@ class AuthManager:
 
     @property
     def signup_enabled(self) -> bool:
-        return self._config.get("signup_enabled", False)
+        return self._config.get("signup_enabled", True)
 
     @signup_enabled.setter
     def signup_enabled(self, value: bool):
