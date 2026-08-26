@@ -66,7 +66,7 @@ def test_policy_returns_reserved_usernames(tmp_path):
 def test_policy_returns_signup_enabled(tmp_path):
     mgr = _make_manager(tmp_path)
     policy = mgr.policy()
-    assert policy["signup_enabled"] is False  # default
+    assert policy["signup_enabled"] is True  # default — open signup enabled
 
 
 def test_policy_returns_session_days(tmp_path):
